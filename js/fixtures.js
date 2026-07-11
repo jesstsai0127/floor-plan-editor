@@ -3,8 +3,8 @@
 // Unlike furniture/electricals (free x,y position), an opening MUST be
 // embedded in a wall — physically it's a hole in the wall structure — so its
 // position is (roomId, wallId, posOnWall) along that wall's length, not x,y.
-// Walls are derived from each room's own shape (4 edges for a rect, 3 for a
-// right-triangle) rather than being separate stored objects.
+// Walls are derived from each room's own rectangle (4 edges) rather than
+// being separate stored objects.
 (function initFixtures() {
   const UI = () => window.appState.ui;
   const cmToPx = (cm) => cm * window.BASE_SCALE;
@@ -17,13 +17,6 @@
 
   // ── wall geometry (derived from room shape, not stored) ─────────────────
   function roomWalls(room) {
-    if (room.shape === 'triangle') {
-      return [
-        { id: 'top', x1: room.x, y1: room.y, x2: room.x + room.w, y2: room.y },
-        { id: 'hyp', x1: room.x + room.w, y1: room.y, x2: room.x, y2: room.y + room.h },
-        { id: 'left', x1: room.x, y1: room.y + room.h, x2: room.x, y2: room.y },
-      ];
-    }
     return [
       { id: 'top', x1: room.x, y1: room.y, x2: room.x + room.w, y2: room.y },
       { id: 'right', x1: room.x + room.w, y1: room.y, x2: room.x + room.w, y2: room.y + room.h },
@@ -45,8 +38,7 @@
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len, ny = dx / len;
     const midX = (wall.x1 + wall.x2) / 2, midY = (wall.y1 + wall.y2) / 2;
-    const cx = room.shape === 'triangle' ? room.x + room.w / 3 : room.x + room.w / 2;
-    const cy = room.shape === 'triangle' ? room.y + room.h / 3 : room.y + room.h / 2;
+    const cx = room.x + room.w / 2, cy = room.y + room.h / 2;
     const dot = nx * (cx - midX) + ny * (cy - midY);
     return dot >= 0 ? { x: nx, y: ny } : { x: -nx, y: -ny };
   }
@@ -80,9 +72,7 @@
   // footprint would then fall outside the room and fail containment)
   window.nearestWallGeometry = nearestWall;
   window.inwardNormalFor = inwardNormal;
-  // exposed so elevation.js can enumerate a room's actual walls (dynamic view
-  // tabs — matches whatever shape the room actually has, not a fixed Front/
-  // Back/Left/Right that wouldn't make sense for a 3-wall triangle room)
+  // exposed so elevation.js can enumerate a room's actual walls (dynamic view tabs)
   window.roomWallsFor = roomWalls;
 
   // Shared reposition logic — used by both canvas drag and direct panel edits
