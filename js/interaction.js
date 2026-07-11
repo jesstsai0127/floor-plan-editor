@@ -35,17 +35,6 @@
   // without mutating real state.
   const EPS = 0.02; // cm tolerance for floating-point snap-to-wall edges
   window.pointInRoom = function pointInRoom(px, py, room) {
-    if (room.shape === 'triangle') {
-      // room triangle vertices: (x,y), (x+w,y), (x,y+h)
-      const x1 = room.x, y1 = room.y, x2 = room.x + room.w, y2 = room.y, x3 = room.x, y3 = room.y + room.h;
-      const sign = (ax, ay, bx, by, cx, cy) => (ax - cx) * (by - cy) - (bx - cx) * (ay - cy);
-      const d1 = sign(px, py, x1, y1, x2, y2);
-      const d2 = sign(px, py, x2, y2, x3, y3);
-      const d3 = sign(px, py, x3, y3, x1, y1);
-      const hasNeg = d1 < -EPS || d2 < -EPS || d3 < -EPS;
-      const hasPos = d1 > EPS || d2 > EPS || d3 > EPS;
-      return !(hasNeg && hasPos);
-    }
     return px >= room.x - EPS && px <= room.x + room.w + EPS && py >= room.y - EPS && py <= room.y + room.h + EPS;
   };
   window.pointInAnyRoom = function pointInAnyRoom(px, py, roomsList) {
