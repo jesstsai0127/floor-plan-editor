@@ -125,4 +125,25 @@ window.LOCALES['zh-TW'] = {
   'electricals.title': '插座',
   'electricals.socket': '插座',
   'electricals.fromFloor': '離地',
+
+  // vertical dimensions（家具/開口/插座，兩種模式都顯示）
+  'panel.verticalDimensions': '垂直位置',
+  'panel.distanceFromCeiling': '距天花板 (cm)',
+
+  // horizontal dimensions（僅立面模式，隨視角改變意義）
+  'panel.horizontalDimensions': '水平位置（此視角）',
+  'panel.fromLeft': '距左側 (cm)',
+  'panel.fromRight': '距右側 (cm)',
+  'panel.rotatedHint': '旋轉過的物件請回平面圖調整位置/尺寸',
+
+  // elevation mode
+  'mode.needRoom': '請先建立房間',
+  'elevation.room': '房間',
+  'elevation.wallTop': '上牆',
+  'elevation.wallRight': '右牆',
+  'elevation.wallBottom': '下牆',
+  'elevation.wallLeft': '左牆',
+  'elevation.wallHyp': '斜邊牆',
+  'elevation.ceiling': '天花板',
+  'elevation.floor': '地板',
 };
