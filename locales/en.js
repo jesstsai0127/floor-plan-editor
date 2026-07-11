@@ -17,7 +17,6 @@ window.LOCALES['en-US'] = {
   'toolbar.select': 'Select',
   'toolbar.room': 'Room',
   'toolbar.roomRect': 'Rectangle',
-  'toolbar.roomTriangle': 'Triangle',
   'toolbar.furniture': 'Furn',
   'toolbar.catFurniture': 'Furniture',
   'toolbar.furnRect': 'Rectangle',
@@ -143,7 +142,6 @@ window.LOCALES['en-US'] = {
   'elevation.wallRight': 'Right',
   'elevation.wallBottom': 'Bottom',
   'elevation.wallLeft': 'Left',
-  'elevation.wallHyp': 'Hypotenuse',
   'elevation.ceiling': 'Ceiling',
   'elevation.floor': 'Floor',
 };
