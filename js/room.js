@@ -301,6 +301,7 @@
       id,
       name: window.t('room.defaultName') + ' ' + (window.appState.rooms.length + 1),
       x: Math.round(xCm), y: Math.round(yCm), w: Math.round(wCm), h: Math.round(hCm),
+      height: window.appState.settings.defaultRoomHeight,
       color, shape: shape || 'rect',
     });
     UI().selectedIds = [id];
@@ -436,5 +437,21 @@
   Vue.watch(
     () => window.appState.layers.find((l) => l.id === 'rooms').visible,
     (visible) => { window.roomsLayer.visible(visible); window.roomsLayer.batchDraw(); }
+  );
+
+  // A room's ceiling height is part of the vertical heightFromFloor/objectHeight/
+  // distanceFromCeiling equation for everything placed in it — when it changes,
+  // the items' stale (least-recently-edited) field needs re-deriving against the
+  // new total. editedKey is null: this doesn't count as a user edit, so it
+  // doesn't reorder which field is considered "stale".
+  Vue.watch(
+    () => window.appState.rooms.map((r) => `${r.id}:${r.height}`).join(','),
+    () => {
+      window.appState.rooms.forEach((room) => {
+        window.appState.furniture.forEach((f) => { if (f.roomId === room.id) window.recomputeTriple(f, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, null); });
+        window.appState.fixtures.forEach((f) => { if (f.roomId === room.id) window.recomputeTriple(f, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, null); });
+        window.appState.electricals.forEach((e) => { if (e.roomId === room.id) window.recomputeTriple(e, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, null); });
+      });
+    }
   );
 })();
