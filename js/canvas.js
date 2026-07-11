@@ -21,16 +21,21 @@ window.BASE_SCALE = 0.4;
   const furnitureLayer = new Konva.Layer();
   const fixturesLayer = new Konva.Layer(); // openings (doors/windows)
   const electricalsLayer = new Konva.Layer(); // sockets
+  const elevationLayer = new Konva.Layer(); // Phase 4: elevation-mode projection
   stage.add(gridLayer);
   stage.add(roomsLayer);
   stage.add(furnitureLayer);
   stage.add(fixturesLayer);
   stage.add(electricalsLayer);
+  stage.add(elevationLayer);
   window.gridLayer = gridLayer;
   window.roomsLayer = roomsLayer;
   window.furnitureLayer = furnitureLayer;
   window.fixturesLayer = fixturesLayer;
   window.electricalsLayer = electricalsLayer;
+  window.elevationLayer = elevationLayer;
+
+  const FLOORPLAN_LAYERS = [gridLayer, roomsLayer, furnitureLayer, fixturesLayer, electricalsLayer];
 
   // live cursor position, in cm — written here (not in the Vue app) so it
   // works regardless of when/whether the Vue app has mounted
@@ -82,6 +87,9 @@ window.BASE_SCALE = 0.4;
     const spacing = window.appState.settings.gridSizeCm * window.BASE_SCALE;
     const hEl = document.querySelector('.ruler-h');
     const vEl = document.querySelector('.ruler-v');
+    // rulers are only in the DOM in floor-plan mode (v-if in index.html) —
+    // elevation mode still calls redrawAll() via resize/pan handlers
+    if (!hEl || !vEl) return;
     hEl.innerHTML = '';
     vEl.innerHTML = '';
     if (spacing * scale < 20) return; // labels would collide, skip
@@ -207,5 +215,57 @@ window.BASE_SCALE = 0.4;
     redrawAll();
   };
 
-  window.fitToContent();
+  // Centre/scale the camera on a (0,0)-(widthCm,heightCm) box — elevation.js
+  // calls this with a wall's (length, room.height) or a room's (w, h) for
+  // Floor/Ceiling, whenever the room or view tab actually changes (not on
+  // every content edit, so it doesn't fight the user's own pan/zoom while
+  // they're working).
+  window.fitElevationToContent = function fitElevationToContent(widthCm, heightCm) {
+    const PAD = 0.15;
+    const bw = widthCm * window.BASE_SCALE * (1 + 2 * PAD);
+    const bh = heightCm * window.BASE_SCALE * (1 + 2 * PAD);
+    let scale = Math.min(stage.width() / bw, stage.height() / bh);
+    scale = Math.max(0.1, Math.min(5, scale));
+    const cx = (widthCm * window.BASE_SCALE) / 2, cy = (heightCm * window.BASE_SCALE) / 2;
+    stage.scale({ x: scale, y: scale });
+    stage.position({ x: stage.width() / 2 - cx * scale, y: stage.height() / 2 - cy * scale });
+    window.appState.ui.zoomFactor = scale;
+  };
+
+  // Elevation mode reuses the same stage (pan/zoom/click infra) but shows a
+  // completely different projection (wall-local u/height or room x/y, not the
+  // floor plan's world cm).
+  //
+  // Floor-plan mode always resets to fit-all-rooms on return — same view as
+  // opening the page fresh, not "wherever I happened to leave it," so it's
+  // predictable rather than restoring a possibly-stale camera position.
+  //
+  // Elevation mode DOES remember its own camera across a mode round-trip:
+  // elevation.js only re-fits when the room/view tab actually changes (see
+  // its lastFitKey), so re-entering elevation on the same room/view with no
+  // stash here would leave the stage wherever floor-plan's fit-to-content
+  // just put it — wrong scale entirely for the elevation content.
+  let elevationView = null;
+  Vue.watch(
+    () => window.appState.ui.mode,
+    (mode, oldMode) => {
+      if (oldMode === 'elevation') {
+        elevationView = { x: stage.x(), y: stage.y(), scale: stage.scaleX() };
+      }
+
+      FLOORPLAN_LAYERS.forEach((l) => l.visible(mode === 'floorplan'));
+      elevationLayer.visible(mode === 'elevation');
+
+      if (mode === 'floorplan') {
+        window.fitToContent();
+      } else if (elevationView) {
+        stage.position({ x: elevationView.x, y: elevationView.y });
+        stage.scale({ x: elevationView.scale, y: elevationView.scale });
+        window.appState.ui.zoomFactor = elevationView.scale;
+      }
+      FLOORPLAN_LAYERS.forEach((l) => l.batchDraw());
+      elevationLayer.batchDraw();
+    },
+    { immediate: true } // also runs once at startup, covering the initial fitToContent() call
+  );
 })();
