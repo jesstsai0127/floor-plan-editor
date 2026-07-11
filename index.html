@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Floor Plan Editor</title>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- ── TOP BAR ── -->
+  <div id="topbar">
+    <div class="logo">⬛ <span>FLOOR</span>PLAN</div>
+    <div class="vd"></div>
+
+    <div class="mode-toggle">
+      <button class="mbt active">{{ t('mode.floorplan') }}</button>
+      <button class="mbt" disabled title="Coming in a later phase">{{ t('mode.elevation') }}</button>
+    </div>
+    <div class="vd"></div>
+
+    <button class="tbtn dim" disabled>＋ {{ t('topbar.new') }}</button>
+    <button class="tbtn dim" disabled>📂 {{ t('topbar.open') }}</button>
+    <button class="tbtn" @click="forceSave">💾 {{ t('topbar.save') }}</button>
+    <div class="vd"></div>
+
+    <button class="tbtn dim" disabled title="Coming in a later phase">↩</button>
+    <button class="tbtn dim" disabled title="Coming in a later phase">↪</button>
+    <button class="tbtn dim" disabled title="Coming in a later phase">🗑</button>
+    <div class="vd"></div>
+
+    <button class="tbtn dim" disabled title="Coming in a later phase">🤖 {{ t('topbar.aiExport') }}</button>
+    <div class="vd"></div>
+    <button class="tbtn dim" disabled title="Coming in a later phase">↓ {{ t('topbar.export') }} ▾</button>
+
+    <div class="sp"></div>
+    <span class="save-note">{{ saveNote }}</span>
+    <div class="vd"></div>
+    <button class="tbtn" @click="settingsOpen = true">⚙</button>
+  </div>
+
+  <!-- ── BODY ── -->
+  <div id="body">
+
+    <!-- ── LEFT TOOLBAR ── -->
+    <div id="toolbar">
+      <div class="tgrp">
+        <button class="tt" :class="{active: appState.ui.activeTool === 'select'}" @click="selectTool('select')">
+          <span class="ic">↖</span><span class="lb">{{ t('toolbar.select') }}</span>
+        </button>
+      </div>
+      <div class="tsep"></div>
+
+      <div class="tgrp">
+        <button class="tt" :class="{active: appState.ui.activeTool.startsWith('room')}" @click="roomMenuOpen = !roomMenuOpen">
+          <span class="ic">▭</span><span class="lb">{{ t('toolbar.room') }} ▾</span>
+        </button>
+        <div class="spop" v-if="roomMenuOpen">
+          <button @click="selectTool('room-rect'); roomMenuOpen = false"><span class="si">▭</span> {{ t('toolbar.roomRect') }}</button>
+          <button @click="selectTool('room-triangle'); roomMenuOpen = false"><span class="si">△</span> {{ t('toolbar.roomTriangle') }}</button>
+        </div>
+      </div>
+      <div class="tsep"></div>
+
+      <div class="tgrp">
+        <button class="tt" :class="{active: appState.ui.activeTool.startsWith('furn')}" @click="furnMenuOpen = !furnMenuOpen">
+          <span class="ic">🪑</span><span class="lb">{{ t('toolbar.furniture') }} ▾</span>
+        </button>
+        <div class="spop" v-if="furnMenuOpen">
+          <div class="cat">{{ t('toolbar.catFurniture') }}</div>
+          <button @click="selectTool('furn-rect'); furnMenuOpen = false"><span class="si">▭</span> {{ t('toolbar.furnRect') }}</button>
+          <button @click="selectTool('furn-circle'); furnMenuOpen = false"><span class="si">●</span> {{ t('toolbar.furnCircle') }}</button>
+          <button @click="selectTool('furn-triangle'); furnMenuOpen = false"><span class="si">△</span> {{ t('toolbar.furnTriangle') }}</button>
+          <div class="sep"></div>
+          <div class="cat">{{ t('toolbar.catStructural') }}</div>
+          <button @click="selectTool('furn-beam'); furnMenuOpen = false"><span class="si">▬</span> {{ t('toolbar.furnBeam') }}</button>
+          <div class="sep"></div>
+          <div class="cat">{{ t('toolbar.catLighting') }}</div>
+          <button @click="selectTool('furn-light-ceiling'); furnMenuOpen = false"><span class="si">💡</span> {{ t('toolbar.furnCeilingLight') }}</button>
+          <button @click="selectTool('furn-light-floor'); furnMenuOpen = false"><span class="si">🕯</span> {{ t('toolbar.furnFloorLamp') }}</button>
+          <button @click="selectTool('furn-light-table'); furnMenuOpen = false"><span class="si">🪔</span> {{ t('toolbar.furnTableLamp') }}</button>
+        </div>
+      </div>
+      <div class="tsep"></div>
+
+      <div class="tgrp">
+        <button class="tt" :class="{active: appState.ui.activeTool.startsWith('fixture')}" @click="openMenuOpen = !openMenuOpen">
+          <span class="ic">🚪</span><span class="lb">{{ t('toolbar.openings') }} ▾</span>
+        </button>
+        <div class="spop" v-if="openMenuOpen">
+          <button @click="selectTool('fixture-door'); openMenuOpen = false"><span class="si">🚪</span> {{ t('toolbar.openingDoor') }}</button>
+          <button @click="selectTool('fixture-window'); openMenuOpen = false"><span class="si">▭</span> {{ t('toolbar.openingWindow') }}</button>
+        </div>
+      </div>
+      <div class="tsep"></div>
+
+      <div class="tgrp">
+        <button class="tt" :class="{active: appState.ui.activeTool === 'socket'}" @click="selectTool('socket')">
+          <span class="ic">⊙</span><span class="lb">{{ t('toolbar.socket') }}</span>
+        </button>
+      </div>
+      <div class="tsep"></div>
+
+      <div class="tgrp">
+        <button class="tt" disabled title="Coming in a later phase"><span class="ic">📝</span><span class="lb">{{ t('toolbar.note') }}</span></button>
+      </div>
+    </div>
+
+    <!-- ── CANVAS ── -->
+    <div id="canvas-wrap">
+      <div class="ruler-h"></div>
+      <div class="ruler-v"></div>
+      <div id="konva-container" v-once></div>
+      <div id="zoom-ctrl">
+        <div class="zb" @click="zoomStep(1)">＋</div>
+        <div id="zl">{{ Math.round(appState.ui.zoomFactor * 100) }}%</div>
+        <div class="zb" @click="zoomStep(-1)">－</div>
+      </div>
+      <div id="minimap" v-once><canvas id="minimap-canvas"></canvas></div>
+    </div>
+
+    <!-- ── RIGHT PANEL ── -->
+    <div id="panel">
+      <template v-if="selectedRoom">
+        <div class="ps">
+          <div class="pt">{{ t('panel.properties') }} — {{ selectedRoom.name }}</div>
+          <div class="f"><label>{{ t('panel.name') }}</label><input v-model="selectedRoom.name"></div>
+          <div class="fr">
+            <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" v-model.number="selectedRoom.w"></div>
+            <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="20" v-model.number="selectedRoom.h"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.fillColor') }}</label>
+            <div class="csw" :style="{background: selectedRoom.color}"><div class="cd" :style="{background: selectedRoom.color}"></div>{{ selectedRoom.color }}</div>
+          </div>
+        </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.position') }}</div>
+          <div class="fr">
+            <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedRoom.x"></div>
+            <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedRoom.y"></div>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="selectedFurnitureItem">
+        <div class="ps">
+          <div class="pt">{{ t('panel.properties') }} — {{ selectedFurnitureItem.name }}</div>
+          <div class="f"><label>{{ t('panel.name') }}</label><input v-model="selectedFurnitureItem.name"></div>
+          <div class="fr">
+            <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="10" v-model.number="selectedFurnitureItem.w"></div>
+            <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="10" v-model.number="selectedFurnitureItem.h"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.fillColor') }}</label>
+            <div class="csw" :style="{background: selectedFurnitureItem.color}"><div class="cd" :style="{background: selectedFurnitureItem.color}"></div>{{ selectedFurnitureItem.color }}</div>
+          </div>
+        </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.position') }}</div>
+          <div class="fr">
+            <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedFurnitureItem.x"></div>
+            <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedFurnitureItem.y"></div>
+          </div>
+        </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.rotation') }}</div>
+          <div class="rr">
+            <input type="number" min="0" max="359" v-model.number="selectedFurnitureItem.rotation">
+            <span style="font-size:9px;color:var(--text-md)">°</span>
+            <button class="rb" @click="rotate90">↻ 90°</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="selectedFixture">
+        <div class="ps">
+          <div class="pt">{{ t('panel.properties') }} — {{ selectedFixture.name }}</div>
+          <div class="f"><label>{{ t('panel.name') }}</label><input v-model="selectedFixture.name"></div>
+          <div class="f"><label>{{ t('fixtures.type') }}</label>
+            <select v-model="selectedFixture.type">
+              <option value="door">{{ t('fixtures.door') }}</option>
+              <option value="window">{{ t('fixtures.window') }}</option>
+            </select>
+          </div>
+          <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" v-model.number="selectedFixture.width"></div>
+        </div>
+        <div class="ps">
+          <div class="pt">{{ t('fixtures.wallPosition') }}</div>
+          <div class="f"><label>{{ t('fixtures.posOnWall') }}</label><input type="number" min="0" :value="selectedFixture.posOnWall" @change="window.setFixturePosOnWall(selectedFixture.id, $event.target.valueAsNumber)"></div>
+          <div class="fr">
+            <div class="f"><label>{{ t('fixtures.heightFromFloor') }}</label><input type="number" min="0" v-model.number="selectedFixture.heightFromFloor"></div>
+            <div class="f"><label>{{ t('fixtures.objectHeight') }}</label><input type="number" min="1" v-model.number="selectedFixture.objectHeight"></div>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="selectedElectrical">
+        <div class="ps">
+          <div class="pt">{{ t('panel.properties') }} — {{ selectedElectrical.name }}</div>
+          <div class="f"><label>{{ t('panel.name') }}</label><input v-model="selectedElectrical.name"></div>
+        </div>
+        <div class="ps">
+          <div class="pt">{{ t('panel.position') }}</div>
+          <div class="fr">
+            <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedElectrical.x"></div>
+            <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedElectrical.y"></div>
+          </div>
+          <div class="f"><label>{{ t('electricals.fromFloor') }} (cm)</label><input type="number" min="0" v-model.number="selectedElectrical.heightFromFloor"></div>
+        </div>
+      </template>
+
+      <!-- multi-selection: count + list + batch actions -->
+      <template v-else-if="totalSelectedCount > 1">
+        <div class="ps">
+          <div class="pt">{{ totalSelectedCount }} {{ t('panel.roomsSelected') }}</div>
+          <div class="ri" v-for="room in selectedRooms" :key="room.id">
+            <div class="rdot" :style="{background: room.color}"></div>{{ room.name }} ({{ room.w }}×{{ room.h }})
+          </div>
+          <div class="ri" v-for="item in selectedFurniture" :key="item.id">
+            <div class="rdot" :style="{background: item.color}"></div>{{ item.name }} ({{ item.w }}×{{ item.h }})
+          </div>
+          <div class="ri" v-for="f in selectedFixtures" :key="f.id">
+            <div class="rdot" style="background:#4A7FA5"></div>{{ f.name }} ({{ f.width }} cm)
+          </div>
+          <div class="ri" v-for="item in selectedElectricals" :key="item.id">
+            <div class="rdot" style="background:#FAF7F0;border:1px solid #999"></div>{{ item.name }}
+          </div>
+        </div>
+        <div class="ps">
+          <div class="pt">{{ t('panel.align') }}</div>
+          <div class="fr">
+            <button class="pa sc" @click="alignSelected('left')">⇤ {{ t('panel.alignLeft') }}</button>
+            <button class="pa sc" @click="alignSelected('right')">⇥ {{ t('panel.alignRight') }}</button>
+          </div>
+          <div class="fr">
+            <button class="pa sc" @click="alignSelected('top')">⤒ {{ t('panel.alignTop') }}</button>
+            <button class="pa sc" @click="alignSelected('bottom')">⤓ {{ t('panel.alignBottom') }}</button>
+          </div>
+          <div class="fr">
+            <button class="pa sc" @click="alignSelected('centerX')">↔ {{ t('panel.alignCenterX') }}</button>
+            <button class="pa sc" @click="alignSelected('centerY')">↕ {{ t('panel.alignCenterY') }}</button>
+          </div>
+        </div>
+        <div class="ps">
+          <div class="pt">{{ t('actions.title') }}</div>
+          <button class="pa dn" @click="deleteSelected">✕ {{ t('panel.deleteAll') }}</button>
+        </div>
+      </template>
+      <div class="ps" v-else style="color:var(--text-md);font-size:10px;text-align:center;padding:20px 10px;line-height:1.6">
+        {{ t('panel.emptyHint') }}
+      </div>
+
+      <!-- Layers -->
+      <div class="ps">
+        <div class="pt">{{ t('layers.title') }}</div>
+        <div class="lr" v-for="layer in appState.layers" :key="layer.id" :class="{act: appState.ui.activeLayerId === layer.id}" @click="appState.ui.activeLayerId = layer.id">
+          <span class="lv" :class="{on: layer.visible}" @click.stop="layer.visible = !layer.visible">{{ layer.visible ? '👁' : '🙈' }}</span>
+          <span class="ll" :class="{on: layer.locked}" @click.stop="layer.locked = !layer.locked">{{ layer.locked ? '🔒' : '🔓' }}</span>
+          <span class="ln">{{ t(layer.name) }}</span>
+        </div>
+      </div>
+
+      <!-- Room list -->
+      <div class="ps">
+        <div class="pt">{{ t('rooms.title') }}</div>
+        <div class="ri" v-for="room in appState.rooms" :key="room.id" :class="{act: appState.ui.selectedIds.includes(room.id)}" @click="clickInList($event, room.id)">
+          <div class="rdot" :style="{background: room.color}"></div>{{ room.name }} ({{ room.w }}×{{ room.h }})
+        </div>
+        <button class="pa sc" style="margin-top:5px" @click="selectTool('room-rect')">＋ {{ t('rooms.add') }}</button>
+      </div>
+
+      <!-- Furniture list -->
+      <div class="ps" v-if="appState.furniture.length">
+        <div class="pt">{{ t('furniture.title') }}</div>
+        <div class="ri" v-for="item in appState.furniture" :key="item.id" :class="{act: appState.ui.selectedIds.includes(item.id)}" @click="clickInList($event, item.id)">
+          <div class="rdot" :style="{background: item.color}"></div>{{ item.name }} ({{ item.w }}×{{ item.h }})
+        </div>
+      </div>
+
+      <!-- Openings list -->
+      <div class="ps" v-if="appState.fixtures.length">
+        <div class="pt">{{ t('fixtures.title') }}</div>
+        <div class="ri" v-for="f in appState.fixtures" :key="f.id" :class="{act: appState.ui.selectedIds.includes(f.id)}" @click="clickInList($event, f.id)">
+          <div class="rdot" style="background:#4A7FA5"></div>{{ f.name }} ({{ f.width }} cm)
+        </div>
+      </div>
+
+      <!-- Electricals list -->
+      <div class="ps" v-if="appState.electricals.length">
+        <div class="pt">{{ t('electricals.title') }}</div>
+        <div class="ri" v-for="item in appState.electricals" :key="item.id" :class="{act: appState.ui.selectedIds.includes(item.id)}" @click="clickInList($event, item.id)">
+          <div class="rdot" style="background:#FAF7F0;border:1px solid #999"></div>{{ item.name }}
+        </div>
+      </div>
+
+      <div class="ps" v-if="selectedRoom || selectedFurnitureItem || selectedFixture || selectedElectrical">
+        <div class="pt">{{ t('actions.title') }}</div>
+        <button class="pa ac" disabled title="Coming in a later phase">↕ {{ t('actions.elevationView') }}</button>
+        <button class="pa sc" v-if="!selectedFixture" @click="duplicateSelected">⧉ {{ t('actions.duplicate') }}</button>
+        <button class="pa dn" @click="deleteSelected">✕ {{ t('actions.delete') }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM BAR ── -->
+  <div id="bb">
+    <span class="co">X: {{ appState.ui.pointerX }} cm  Y: {{ appState.ui.pointerY }} cm</span>
+    <span>|</span><span>{{ t('bottombar.zoom') }}: {{ Math.round(appState.ui.zoomFactor * 100) }}%</span>
+    <span>|</span><span>{{ t('bottombar.unit') }}: {{ appState.settings.unit }}</span>
+    <span>|</span><span>{{ t('bottombar.layer') }}: {{ t('layers.' + appState.ui.activeLayerId) }}</span>
+    <span>|</span><span>{{ t('bottombar.grid') }}: {{ appState.settings.gridSizeCm }} cm/cell</span>
+    <span>|</span><span style="color:#7a9060">{{ saveNote }}</span>
+  </div>
+
+  <!-- ── SETTINGS MODAL ── -->
+  <div class="overlay" v-if="settingsOpen" @click.self="settingsOpen = false">
+    <div class="modal" style="width:340px">
+      <div class="mh">⚙ {{ t('settings.title') }} <span @click="settingsOpen = false">✕</span></div>
+      <div class="mb">
+        <div class="fr">
+          <div class="f" style="flex:1"><label>{{ t('settings.unit') }}</label>
+            <select v-model="appState.settings.unit">
+              <option value="cm">{{ t('settings.unitMetric') }}</option>
+              <option value="in" disabled>{{ t('settings.unitImperial') }}</option>
+            </select>
+          </div>
+          <div class="f" style="flex:1"><label>{{ t('settings.wallThickness') }}</label><input type="number" min="1" v-model.number="appState.settings.wallThickness"></div>
+        </div>
+        <div class="f"><label>{{ t('settings.language') }}</label>
+          <select v-model="appState.settings.language">
+            <option value="en-US">{{ t('settings.langEnUS') }}</option>
+            <option value="zh-TW">{{ t('settings.langZhTW') }}</option>
+          </select>
+        </div>
+
+        <hr class="mhr">
+        <div class="ms">{{ t('settings.grid') }}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:10px;color:var(--text-md);flex:1">{{ t('settings.showGrid') }}</label>
+          <div class="tog" :class="appState.settings.gridVisible ? 'on' : 'off'" @click="appState.settings.gridVisible = !appState.settings.gridVisible"><div class="k"></div></div>
+        </div>
+        <div class="fr">
+          <div class="f" style="flex:1"><label>{{ t('settings.gridSize') }}</label>
+            <input type="number" min="1" v-model.number="appState.settings.gridSizeCm">
+            <div style="font-size:8px;color:#aaa;margin-top:2px">{{ t('settings.gridSizeHint') }}</div>
+          </div>
+          <div class="f" style="flex:1"><label>{{ t('settings.gridColor') }}</label>
+            <div style="display:flex;gap:4px;align-items:flex-start;margin-top:2px">
+              <input type="color" v-model="appState.settings.gridColor" style="width:22px;height:22px;padding:0;border:1px solid #aaa;border-radius:2px;cursor:pointer;flex-shrink:0">
+              <input v-model="appState.settings.gridColor" style="flex:1;padding:3px 4px;font-size:10px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button class="pa pr" style="flex:1" @click="settingsOpen = false">{{ t('settings.apply') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vendor libs (classic scripts, no ES modules — avoids file:// CORS issues) -->
+<script src="vendor/vue.global.min.js"></script>
+<script src="vendor/konva.min.js"></script>
+
+<!-- App scripts — order matters -->
+<script src="locales/en.js"></script>
+<script src="locales/zh-TW.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/state.js"></script>
+<script src="js/storage.js"></script>
+<script>
+// Restore before canvas.js runs, so its initial grid draw uses the restored
+// grid settings (size/color/visible) instead of the hardcoded defaults.
+window.restoreAutosave();
+</script>
+
+<script>
+// Vue mounts #app with no explicit template, so it in-DOM-compiles from the
+// current innerHTML and then REPLACES those DOM nodes with freshly rendered
+// ones. canvas.js/room.js must run AFTER this, against the final DOM — if
+// Konva attaches to #konva-container first, Vue's mount silently discards
+// the very canvas elements Konva wired up, leaving a look-alike decoy with
+// no event bindings (clicks/drags on it do nothing).
+Vue.createApp({
+  setup() {
+    const roomMenuOpen = Vue.ref(false);
+    const furnMenuOpen = Vue.ref(false);
+    const openMenuOpen = Vue.ref(false);
+    const settingsOpen = Vue.ref(false);
+
+    const selectedRooms = Vue.computed(() =>
+      window.appState.rooms.filter((r) => window.appState.ui.selectedIds.includes(r.id))
+    );
+    const selectedFurniture = Vue.computed(() =>
+      window.appState.furniture.filter((f) => window.appState.ui.selectedIds.includes(f.id))
+    );
+    const selectedFixtures = Vue.computed(() =>
+      window.appState.fixtures.filter((f) => window.appState.ui.selectedIds.includes(f.id))
+    );
+    const selectedElectricals = Vue.computed(() =>
+      window.appState.electricals.filter((e) => window.appState.ui.selectedIds.includes(e.id))
+    );
+    const totalSelectedCount = Vue.computed(() =>
+      selectedRooms.value.length + selectedFurniture.value.length + selectedFixtures.value.length + selectedElectricals.value.length
+    );
+    // single-selection views: only when exactly one entity (of that type, and
+    // nothing else) is selected
+    const selectedRoom = Vue.computed(() =>
+      totalSelectedCount.value === 1 && selectedRooms.value.length === 1 ? selectedRooms.value[0] : null
+    );
+    const selectedFurnitureItem = Vue.computed(() =>
+      totalSelectedCount.value === 1 && selectedFurniture.value.length === 1 ? selectedFurniture.value[0] : null
+    );
+    const selectedFixture = Vue.computed(() =>
+      totalSelectedCount.value === 1 && selectedFixtures.value.length === 1 ? selectedFixtures.value[0] : null
+    );
+    const selectedElectrical = Vue.computed(() =>
+      totalSelectedCount.value === 1 && selectedElectricals.value.length === 1 ? selectedElectricals.value[0] : null
+    );
+
+    const saveNote = Vue.computed(() => {
+      if (!window.appState.lastSavedAt) return '● ' + window.t('topbar.autosaved');
+      const hh = String(window.appState.lastSavedAt.getHours()).padStart(2, '0');
+      const mm = String(window.appState.lastSavedAt.getMinutes()).padStart(2, '0');
+      return `● ${window.t('bottombar.saved')} ${hh}:${mm}`;
+    });
+
+    function selectTool(tool) {
+      window.appState.ui.activeTool = tool;
+      window.appState.ui.selectedIds = [];
+    }
+
+    function forceSave() {
+      window.scheduleSave();
+    }
+
+    function duplicateSelected() {
+      if (selectedRoom.value) {
+        const src = selectedRoom.value;
+        const id = window.appState.createRoomId();
+        window.appState.rooms.push({ ...src, id, x: src.x + 20, y: src.y + 20, name: src.name + ' copy' });
+        window.appState.ui.selectedIds = [id];
+      } else if (selectedFurnitureItem.value) {
+        const src = selectedFurnitureItem.value;
+        const id = window.appState.createFurnitureId();
+        window.appState.furniture.push({ ...src, id, x: src.x + 20, y: src.y + 20, name: src.name + ' copy' });
+        window.appState.ui.selectedIds = [id];
+      } else if (selectedElectrical.value) {
+        const src = selectedElectrical.value;
+        const id = window.appState.createElectricalId();
+        window.appState.electricals.push({ ...src, id, x: src.x + 20, y: src.y + 20, name: src.name + ' copy' });
+        window.appState.ui.selectedIds = [id];
+      }
+      // fixtures aren't duplicated — a duplicate would need its own wall
+      // position picked, same as placing a new one; not meaningful to just
+      // offset x/y since fixtures don't have x/y
+    }
+
+    function deleteSelected() {
+      window.deleteSelected();
+    }
+
+    // room/furniture list click: plain = single-select, Shift/Ctrl/Cmd = add/remove
+    function clickInList(evt, id) {
+      const additive = evt.shiftKey || evt.ctrlKey || evt.metaKey;
+      if (additive) {
+        const set = new Set(window.appState.ui.selectedIds);
+        if (set.has(id)) set.delete(id); else set.add(id);
+        window.appState.ui.selectedIds = Array.from(set);
+      } else {
+        window.appState.ui.selectedIds = [id];
+      }
+    }
+
+    function rotate90() {
+      window.rotateSelectedFurniture90();
+    }
+
+    function zoomStep(direction) {
+      window.setZoom(window.stage.scaleX() * (direction > 0 ? 1.2 : 1 / 1.2));
+    }
+
+    return {
+      appState: window.appState,
+      t: window.t,
+      roomMenuOpen,
+      furnMenuOpen,
+      openMenuOpen,
+      settingsOpen,
+      selectedRoom,
+      selectedRooms,
+      selectedFurnitureItem,
+      selectedFurniture,
+      selectedFixture,
+      selectedFixtures,
+      selectedElectrical,
+      selectedElectricals,
+      totalSelectedCount,
+      saveNote,
+      selectTool,
+      forceSave,
+      duplicateSelected,
+      deleteSelected,
+      clickInList,
+      rotate90,
+      alignSelected: (edge) => window.alignSelected(edge),
+      zoomStep,
+    };
+  },
+}).mount('#app');
+</script>
+
+<!-- Konva must attach after the Vue mount above has produced its final DOM -->
+<script src="js/canvas.js"></script>
+<script src="js/interaction.js"></script>
+<script src="js/room.js"></script>
+<script src="js/furniture.js"></script>
+<script src="js/fixtures.js"></script>
+<script src="js/electricals.js"></script>
+<script src="js/minimap.js"></script>
+</body>
+</html>
