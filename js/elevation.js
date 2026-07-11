@@ -38,6 +38,7 @@
     const targetId = OPPOSITE_WALL_ID[view] || view;
     return window.roomWallsFor(room).find((w) => w.id === targetId);
   }
+  window.elevationWallForView = wallForView;
 
   // switches into elevation mode, picking a sensible room/view if the current
   // ones are missing or no longer valid (e.g. the room was deleted)
@@ -64,6 +65,8 @@
       { x: item.x + item.w / 2, y: item.y + item.h / 2 },
     ];
   }
+  window.elevationFurnitureSamples = furnitureSamples;
+  window.elevationElectricalSamples = electricalSamples;
 
   // "does this item substantially overlap this specific room" — an overlap-
   // AREA test (not roomId equality), so furniture genuinely spanning two
@@ -85,6 +88,7 @@
   function overlapsRoom(item, room) {
     return overlapAreaWithRoom(item, room) >= MIN_OVERLAP_AREA_CM2;
   }
+  window.elevationOverlapsRoom = overlapsRoom;
 
   // project a footprint's sample points onto a wall's local (u = along wall,
   // depth = perpendicular, into the room) frame
@@ -103,6 +107,7 @@
     });
     return { u0, u1, depth: depthSum / samples.length };
   }
+  window.elevationProjectToWall = projectToWall;
 
   // Horizontal position/width info for the CURRENTLY SELECTED item, in the
   // current wall view's local frame — used by index.html's elevation-mode
@@ -174,6 +179,9 @@
     if (u1 <= 0 || u0 >= wlen) return null; // doesn't actually overlap this wall's own extent
     return { u0, u1, depth: 0 };
   }
+  window.elevationFixtureProjectionOnWall = fixtureProjectionOnWall;
+  window.ELEVATION_TOUCHES_CEILING_CM = TOUCHES_CEILING_CM;
+  window.ELEVATION_SOCKET_WALL_PROXIMITY_CM = SOCKET_WALL_PROXIMITY_CM;
 
   let lastFitKey = null;
 
