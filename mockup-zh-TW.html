@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>Floor Plan Editor — 中文版預覽 (zh-TW)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F5F0E8;--grid:#DDD5C0;
+  --bar-top:#2C2416;--bar-side:#3D3525;
+  --panel-bg:#FAF7F0;--panel-bd:#DDD5C0;
+  --text-dk:#2C2416;--text-md:#5C4A2A;--text-lt:#F5F0E8;
+  --accent:#4A7FA5;--sel:#C17F3B;--sticky:#FEF3C7;
+  --font:'Courier New',monospace;
+}
+body{font-family:var(--font);background:#888;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── TOP BAR ── */
+#topbar{height:44px;background:var(--bar-top);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;border-bottom:1px solid #1a150e}
+.logo{font-size:13px;font-weight:bold;color:var(--text-lt);letter-spacing:.05em;margin-right:6px;white-space:nowrap}
+.logo span{color:var(--sel)}
+.vd{width:1px;height:24px;background:#5a4a34;margin:0 4px}
+.mode-toggle{display:flex;background:#1a150e;border-radius:4px;overflow:hidden}
+.mbt{padding:4px 11px;font-size:11px;font-family:var(--font);color:#a08060;border:none;background:transparent;cursor:pointer}
+.mbt.active{background:var(--sel);color:#fff}
+.tbtn{padding:4px 8px;font-size:11px;font-family:var(--font);color:var(--text-lt);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:3px;cursor:pointer;white-space:nowrap}
+.tbtn.dim{color:#7a6040;border-color:rgba(255,255,255,.08)}
+.sp{flex:1}
+.save-note{font-size:10px;color:#7a6040}
+
+/* ── BODY ── */
+#body{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT TOOLBAR ── */
+#toolbar{width:52px;background:var(--bar-side);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;flex-shrink:0;border-right:1px solid #2a1e10}
+.tgrp{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;padding:0 4px;position:relative}
+.tsep{width:32px;height:1px;background:#5a4a34;margin:3px 0}
+.tt{width:40px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;color:#b09070}
+.tt:hover{background:rgba(255,255,255,.08);color:var(--text-lt)}
+.tt.active{background:var(--sel);border-color:#e09040;color:#fff}
+.tt .ic{font-size:15px;line-height:1}
+.tt .lb{font-size:7.5px;letter-spacing:.02em}
+
+/* shape submenu */
+.spop{position:absolute;left:54px;top:0;background:#2C2416;border:1px solid #5a4a34;border-radius:4px;padding:4px;display:flex;flex-direction:column;gap:2px;z-index:200;box-shadow:3px 4px 10px rgba(0,0,0,.4);min-width:130px}
+.spop button{display:flex;align-items:center;gap:7px;padding:5px 9px;font-size:10px;font-family:var(--font);color:#d0b890;background:transparent;border:none;border-radius:3px;cursor:pointer;white-space:nowrap;text-align:left}
+.spop button:hover{background:rgba(255,255,255,.1);color:#fff}
+.spop .si{font-size:12px;width:16px;text-align:center}
+.spop .sep{height:1px;background:#5a4a34;margin:2px 0}
+
+/* ── CANVAS ── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:40px 40px}
+
+/* Rulers */
+.ruler-h{position:absolute;top:0;left:18px;right:0;height:18px;background:#EDE8DC;border-bottom:1px solid var(--grid);font-size:8px;color:var(--text-md);overflow:hidden;z-index:10}
+.ruler-v{position:absolute;top:18px;left:0;bottom:0;width:18px;background:#EDE8DC;border-right:1px solid var(--grid);font-size:8px;color:var(--text-md);overflow:hidden;z-index:10}
+#cc{position:absolute;top:18px;left:18px;right:0;bottom:0}
+
+/* Rooms */
+.room{position:absolute;border:2px solid var(--text-dk);background:rgba(180,200,160,.25);display:flex;align-items:center;justify-content:center}
+.room.sel{border-color:var(--sel);border-style:dashed}
+.rl{font-size:10px;color:var(--text-dk);text-align:center;line-height:1.5}
+.rd{font-size:9px;color:var(--text-md)}
+.furn{position:absolute;border:1.5px solid var(--text-dk);background:rgba(200,180,150,.2);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dk)}
+.furn.ci{border-radius:50%}
+.win{position:absolute;background:var(--accent);opacity:.5}
+.sticky{position:absolute;background:var(--sticky);border:1px solid #e8d87a;border-radius:2px;padding:5px 7px;font-size:9px;color:var(--text-dk);box-shadow:2px 2px 4px rgba(0,0,0,.1);line-height:1.5}
+.dline{position:absolute;background:var(--accent)}
+.dline.h{height:1px}.dline.v{width:1px}
+.dlbl{position:absolute;font-size:9px;color:var(--accent);background:var(--paper);padding:0 3px;white-space:nowrap}
+.bg-img{position:absolute;border:2px dashed #bbb;background:repeating-linear-gradient(45deg,#e8e0d0,#e8e0d0 5px,#f0ebe0 5px,#f0ebe0 10px);display:flex;align-items:center;justify-content:center;font-size:10px;color:#999}
+
+/* Zoom */
+#zoom-ctrl{position:absolute;bottom:24px;right:12px;display:flex;flex-direction:column;gap:2px;z-index:5}
+.zb{width:26px;height:26px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-dk);cursor:pointer}
+#zl{width:26px;height:18px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-md)}
+
+/* ── RIGHT PANEL ── */
+#panel{width:224px;background:var(--panel-bg);border-left:1px solid var(--panel-bd);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.ps{border-bottom:1px solid var(--panel-bd);padding:8px 10px}
+.pt{font-size:9px;font-weight:bold;color:var(--text-md);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.f{margin-bottom:5px}
+.f label{display:block;font-size:9px;color:var(--text-md);margin-bottom:2px;letter-spacing:.03em}
+.f input,.f select{width:100%;padding:3px 6px;font-size:11px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px}
+.fr{display:flex;gap:5px}.fr .f{flex:1}
+.csw{width:100%;height:22px;border:1px solid var(--panel-bd);border-radius:2px;background:rgba(180,200,160,.4);display:flex;align-items:center;padding:0 6px;gap:5px;font-size:10px;color:var(--text-md);cursor:pointer}
+.cd{width:12px;height:12px;border-radius:2px;background:rgba(180,200,160,.7);border:1px solid #aaa}
+
+/* Three-way */
+.tw{background:rgba(74,127,165,.06);border:1px solid rgba(74,127,165,.2);border-radius:3px;padding:7px;margin-top:4px}
+.tw-hl{font-size:9px;font-weight:bold;color:var(--accent);margin-bottom:3px}
+.tw-hint{font-size:8px;color:var(--accent);opacity:.8;margin-bottom:6px;font-style:italic}
+.twr{display:flex;align-items:center;gap:3px;margin-bottom:4px}
+.twr label{font-size:9px;color:var(--text-md);width:68px;flex-shrink:0}
+.twr input{width:0;flex:1;min-width:0;padding:3px 4px;font-size:10px;font-family:var(--font);border:1px solid var(--panel-bd);border-radius:2px;background:#fff}
+.twr .u{font-size:9px;color:var(--text-md);flex-shrink:0}
+.twr .lk{font-size:11px;flex-shrink:0;cursor:pointer;color:#ccc}
+.twr .lk.on{color:var(--accent)}
+.twr input.av{background:#EDE8DC;color:var(--text-md);font-style:italic}
+.tw-eq{font-size:9px;color:var(--accent);text-align:right;margin-top:2px}
+
+/* Rotation */
+.rr{display:flex;align-items:center;gap:4px}
+.rr input{flex:1;padding:3px 5px;font-size:11px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)}
+.rb{padding:3px 7px;font-size:11px;background:#EDE8DC;border:1px solid var(--panel-bd);border-radius:2px;cursor:pointer}
+
+/* Layers */
+.lr{display:flex;align-items:center;gap:5px;padding:4px 4px;border-radius:3px;cursor:pointer;font-size:10px;color:var(--text-dk)}
+.lr:hover{background:rgba(0,0,0,.04)}
+.lr.act{background:rgba(193,127,59,.1)}
+.lv,.ll{font-size:12px;cursor:pointer;color:#ccc;flex-shrink:0}
+.lv.on{color:var(--text-dk)}.ll.on{color:var(--accent)}
+.ln{flex:1}
+
+/* Room list */
+.ri{display:flex;align-items:center;gap:5px;padding:4px 4px;border-radius:3px;cursor:pointer;font-size:10px;color:var(--text-dk)}
+.ri:hover{background:rgba(0,0,0,.04)}
+.ri.act{background:rgba(193,127,59,.12);color:var(--sel)}
+.rdot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* Buttons */
+.pa{width:100%;padding:5px;font-size:10px;font-family:var(--font);border:none;border-radius:3px;cursor:pointer;margin-bottom:3px}
+.pa.pr{background:var(--bar-top);color:var(--text-lt)}
+.pa.sc{background:transparent;color:var(--text-dk);border:1px solid var(--panel-bd)}
+.pa.ac{background:var(--accent);color:#fff}
+.pa.dn{background:#8B3A3A;color:#fff}
+
+/* ── BOTTOM BAR ── */
+#bb{height:21px;background:var(--bar-top);display:flex;align-items:center;padding:0 10px;gap:12px;flex-shrink:0;border-top:1px solid #1a150e}
+#bb span{font-size:9px;color:#7a6040;font-family:var(--font);letter-spacing:.03em}
+#bb .co{color:#a08060}
+
+/* ── MODAL OVERLAY ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:999;pointer-events:none}
+.modal{background:var(--panel-bg);border:1px solid var(--panel-bd);border-radius:6px;font-family:var(--font);pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.mh{background:var(--bar-top);color:var(--text-lt);padding:10px 14px;font-size:12px;font-weight:bold;border-radius:5px 5px 0 0;display:flex;justify-content:space-between;align-items:center}
+.mb{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.ms{font-size:9px;font-weight:bold;color:var(--text-md);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.mhr{border:none;border-top:1px solid var(--panel-bd)}
+.tog{width:36px;height:18px;background:var(--accent);border-radius:9px;position:relative;cursor:pointer;flex-shrink:0}
+.tog .k{position:absolute;right:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div id="topbar">
+  <div class="logo">⬛ <span>FLOOR</span>PLAN</div>
+  <div class="vd"></div>
+
+  <div class="mode-toggle">
+    <button class="mbt active">平面圖</button>
+    <button class="mbt">立面圖</button>
+  </div>
+  <div class="vd"></div>
+
+  <button class="tbtn">＋ 新增</button>
+  <button class="tbtn">📂 開啟</button>
+  <button class="tbtn">💾 儲存</button>
+  <div class="vd"></div>
+
+  <!-- Undo / Redo / Clear -->
+  <button class="tbtn dim" title="復原 (⌘Z)">↩</button>
+  <button class="tbtn dim" title="重做 (⌘⇧Z)">↪</button>
+  <button class="tbtn dim" title="清空畫布">🗑</button>
+  <div class="vd"></div>
+
+  <button class="tbtn">🤖 AI 匯出</button>
+  <div class="vd"></div>
+
+  <!-- Export dropdown -->
+  <button class="tbtn">↓ 匯出 ▾</button>
+  <div class="sp"></div>
+  <span class="save-note">● 已自動儲存</span>
+  <div class="vd"></div>
+  <button class="tbtn">⚙</button>
+</div>
+
+<!-- ── BODY ── -->
+<div id="body">
+
+  <!-- ── LEFT TOOLBAR ── -->
+  <div id="toolbar">
+    <div class="tgrp">
+      <button class="tt active"><span class="ic">↖</span><span class="lb">選取</span></button>
+    </div>
+    <div class="tsep"></div>
+
+    <!-- Room ▾ -->
+    <div class="tgrp">
+      <button class="tt"><span class="ic">▭</span><span class="lb">房間 ▾</span></button>
+      <!-- submenu shown open for demo -->
+      <div class="spop" style="top:0">
+        <button><span class="si">▭</span> 矩形</button>
+        <button><span class="si">△</span> 三角形</button>
+      </div>
+    </div>
+    <div class="tsep"></div>
+
+    <!-- Furniture ▾ (includes lights & beam) -->
+    <div class="tgrp">
+      <button class="tt"><span class="ic">🪑</span><span class="lb">家具 ▾</span></button>
+    </div>
+    <div class="tsep"></div>
+
+    <!-- Openings ▾ (door + window merged) -->
+    <div class="tgrp">
+      <button class="tt"><span class="ic">🚪</span><span class="lb">開口 ▾</span></button>
+    </div>
+    <div class="tsep"></div>
+
+    <div class="tgrp">
+      <button class="tt"><span class="ic">⊙</span><span class="lb">插座</span></button>
+    </div>
+    <div class="tsep"></div>
+
+    <div class="tgrp">
+      <button class="tt"><span class="ic">📝</span><span class="lb">便條</span></button>
+    </div>
+  </div>
+
+  <!-- ── CANVAS ── -->
+  <div id="canvas-wrap">
+    <div class="ruler-h">
+      <span style="position:absolute;left:24px;bottom:1px">-200</span>
+      <span style="position:absolute;left:64px;bottom:1px">-100</span>
+      <span style="position:absolute;left:104px;bottom:1px">0</span>
+      <span style="position:absolute;left:144px;bottom:1px">100</span>
+      <span style="position:absolute;left:184px;bottom:1px">200</span>
+      <span style="position:absolute;left:224px;bottom:1px">300</span>
+      <span style="position:absolute;left:264px;bottom:1px">400</span>
+      <span style="position:absolute;left:304px;bottom:1px">500</span>
+      <span style="position:absolute;left:344px;bottom:1px">600</span>
+      <span style="position:absolute;left:380px;bottom:1px">700 cm</span>
+    </div>
+    <div class="ruler-v">
+      <span style="position:absolute;right:1px;top:8px">-100</span>
+      <span style="position:absolute;right:1px;top:48px">0</span>
+      <span style="position:absolute;right:1px;top:88px">100</span>
+      <span style="position:absolute;right:1px;top:128px">200</span>
+      <span style="position:absolute;right:1px;top:168px">300</span>
+      <span style="position:absolute;right:1px;top:208px">400</span>
+      <span style="position:absolute;right:1px;top:248px">500</span>
+    </div>
+    <div id="cc">
+      <!-- BG image hint -->
+      <div class="bg-img" style="left:28px;top:18px;width:340px;height:250px;opacity:.5">底圖素材（比例 1:50）</div>
+
+      <!-- 客廳 (selected) -->
+      <div class="room sel" style="left:78px;top:48px;width:200px;height:160px">
+        <div class="win" style="position:absolute;top:-4px;left:66px;width:56px;height:6px"></div>
+        <div style="position:absolute;bottom:-2px;left:22px;width:32px;height:32px">
+          <svg viewBox="0 0 32 32" fill="none" style="width:100%;height:100%">
+            <line x1="0" y1="32" x2="32" y2="32" stroke="#2C2416" stroke-width="2"/>
+            <line x1="0" y1="0" x2="0" y2="32" stroke="#2C2416" stroke-width="2"/>
+            <path d="M0 32 Q0 0 32 0" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+          </svg>
+        </div>
+        <div class="furn" style="position:absolute;left:7px;bottom:10px;width:76px;height:26px">沙發</div>
+        <div class="furn ci" style="position:absolute;right:10px;top:14px;width:42px;height:42px">桌子</div>
+        <div style="position:absolute;left:22px;bottom:24px;font-size:11px;color:var(--sel)">↑</div>
+        <div style="position:absolute;left:1px;top:42px;font-size:11px">⊙</div>
+        <div class="rl">客廳<div class="rd">500 × 400 cm</div></div>
+      </div>
+
+      <!-- dim lines -->
+      <div class="dline h" style="left:78px;top:20px;width:200px"></div>
+      <div class="dline v" style="left:78px;top:16px;height:8px"></div>
+      <div class="dline v" style="left:277px;top:16px;height:8px"></div>
+      <div class="dlbl" style="left:138px;top:8px">500 cm</div>
+      <div class="dline v" style="left:46px;top:48px;height:160px"></div>
+      <div class="dline h" style="left:42px;top:48px;width:8px"></div>
+      <div class="dline h" style="left:42px;top:207px;width:8px"></div>
+      <div class="dlbl" style="left:20px;top:112px;writing-mode:vertical-rl;transform:rotate(180deg)">400 cm</div>
+
+      <!-- 臥室 1 -->
+      <div class="room" style="left:78px;top:228px;width:136px;height:106px">
+        <div style="position:absolute;top:-2px;right:14px;width:24px;height:24px">
+          <svg viewBox="0 0 24 24" fill="none" style="width:100%;height:100%">
+            <line x1="0" y1="0" x2="24" y2="0" stroke="#2C2416" stroke-width="2"/>
+            <line x1="24" y1="0" x2="24" y2="24" stroke="#2C2416" stroke-width="2"/>
+            <path d="M24 0 Q24 24 0 24" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+          </svg>
+        </div>
+        <div class="rl">臥室 1<div class="rd">350 × 275 cm</div></div>
+      </div>
+
+      <!-- 衛浴 -->
+      <div class="room" style="left:234px;top:228px;width:78px;height:106px">
+        <div class="rl">衛浴<div class="rd">200 × 275 cm</div></div>
+      </div>
+
+      <div class="sticky" style="left:346px;top:62px">北牆沿線<br>工業風管線</div>
+
+      <div id="zoom-ctrl">
+        <div class="zb">＋</div>
+        <div id="zl">100%</div>
+        <div class="zb">－</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div id="panel">
+
+    <div class="ps">
+      <div class="pt">屬性 — 客廳</div>
+      <div class="f"><label>名稱</label><input value="客廳"></div>
+      <div class="fr">
+        <div class="f"><label>寬度 (cm)</label><input type="number" value="500"></div>
+        <div class="f"><label>深度 (cm)</label><input type="number" value="400"></div>
+      </div>
+      <div class="f"><label>高度 (cm)</label><input type="number" value="300"></div>
+      <div class="f"><label>填色</label><div class="csw"><div class="cd"></div>rgba(180,200,160,0.25)</div></div>
+    </div>
+
+    <div class="ps">
+      <div class="pt">位置</div>
+      <div class="fr">
+        <div class="f"><label>X (cm)</label><input type="number" value="0"></div>
+        <div class="f"><label>Y (cm)</label><input type="number" value="0"></div>
+      </div>
+      <div style="font-size:8px;color:#7a6040;margin-top:2px">方向鍵：微調 1 cm</div>
+    </div>
+
+    <!-- Vertical Height — three-way -->
+    <div class="ps">
+      <div class="pt">垂直高度</div>
+      <div class="tw">
+        <div class="tw-hl">任填三項中的兩項，第三項自動計算</div>
+        <div class="tw-hint">房間高 = 300 cm</div>
+        <div class="twr">
+          <label>距天花板</label>
+          <input type="number" value="0">
+          <span class="u">cm</span>
+          <span class="lk">🔓</span>
+        </div>
+        <div class="twr">
+          <label>物件高度</label>
+          <input type="number" value="80">
+          <span class="u">cm</span>
+          <span class="lk">🔓</span>
+        </div>
+        <div class="twr">
+          <label>距地板</label>
+          <input class="av" value="220" readonly>
+          <span class="u">cm</span>
+          <span class="lk on">🔒</span>
+        </div>
+        <div class="tw-eq">0 + 80 + 220 = 300 ✓</div>
+      </div>
+    </div>
+
+    <!-- Horizontal Width — three-way -->
+    <div class="ps">
+      <div class="pt">水平寬度</div>
+      <div class="tw">
+        <div class="tw-hl">任填三項中的兩項，第三項自動計算</div>
+        <div class="tw-hint">牆寬 = 500 cm</div>
+        <div class="twr">
+          <label>距左牆</label>
+          <input type="number" value="60">
+          <span class="u">cm</span>
+          <span class="lk">🔓</span>
+        </div>
+        <div class="twr">
+          <label>物件寬度</label>
+          <input type="number" value="200">
+          <span class="u">cm</span>
+          <span class="lk">🔓</span>
+        </div>
+        <div class="twr">
+          <label>距右牆</label>
+          <input class="av" value="240" readonly>
+          <span class="u">cm</span>
+          <span class="lk on">🔒</span>
+        </div>
+        <div class="tw-eq">60 + 200 + 240 = 500 ✓</div>
+      </div>
+    </div>
+
+    <div class="ps">
+      <div class="pt">旋轉</div>
+      <div class="rr">
+        <input type="number" value="0">
+        <span style="font-size:9px;color:var(--text-md)">°</span>
+        <button class="rb">↻ 90°</button>
+      </div>
+    </div>
+
+    <!-- Layers -->
+    <div class="ps">
+      <div class="pt">圖層</div>
+      <div class="lr"><span class="lv on">👁</span><span class="ll">🔓</span><span class="ln">底圖</span></div>
+      <div class="lr act"><span class="lv on">👁</span><span class="ll">🔓</span><span class="ln" style="color:var(--sel);font-weight:bold">房間 ●</span></div>
+      <div class="lr"><span class="lv on">👁</span><span class="ll">🔓</span><span class="ln">家具</span></div>
+      <div class="lr"><span class="lv on">👁</span><span class="ll on">🔒</span><span class="ln">水電 (已鎖定)</span></div>
+      <div class="lr" style="opacity:.5"><span class="lv" style="color:#ccc">🙈</span><span class="ll">🔓</span><span class="ln">便條紙</span></div>
+    </div>
+
+    <!-- Room list -->
+    <div class="ps">
+      <div class="pt">房間</div>
+      <div class="ri act"><div class="rdot" style="background:rgba(180,200,160,.7);border:1px solid #888"></div>客廳 (500×400)</div>
+      <div class="ri"><div class="rdot" style="background:rgba(180,160,200,.7);border:1px solid #888"></div>臥室 1 (350×275)</div>
+      <div class="ri"><div class="rdot" style="background:rgba(160,180,200,.7);border:1px solid #888"></div>衛浴 (200×275)</div>
+      <button class="pa sc" style="margin-top:5px">＋ 新增房間</button>
+    </div>
+
+    <div class="ps">
+      <div class="pt">動作</div>
+      <button class="pa ac">↕ 立面視角</button>
+      <button class="pa sc">⧉ 複製</button>
+      <button class="pa dn">✕ 刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM BAR ── -->
+<div id="bb">
+  <span class="co">X: 248 cm  Y: 142 cm</span>
+  <span>|</span><span>縮放：100%</span>
+  <span>|</span><span>單位：cm</span>
+  <span>|</span><span>圖層：房間</span>
+  <span>|</span><span>格線：100 cm/格</span>
+  <span>|</span><span style="color:#7a9060">● 已儲存 00:23</span>
+</div>
+
+<!-- ══════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════ -->
+<div class="overlay" style="display:none">
+<div class="modal" style="width:340px">
+  <div class="mh">⚙ 設定 <span style="opacity:.5;cursor:pointer">✕</span></div>
+  <div class="mb">
+    <div class="fr">
+      <div class="f" style="flex:1"><label>單位</label>
+        <select><option>公制 (cm)</option><option>英制 (in/ft)</option></select></div>
+      <div class="f" style="flex:1"><label>牆厚 (cm)</label><input type="number" value="15"></div>
+    </div>
+    <div class="f"><label>語言</label>
+      <select><option>English (en-US)</option><option selected>繁體中文 (zh-TW)</option></select></div>
+
+    <hr class="mhr">
+    <div class="ms">格線</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:10px;color:var(--text-md);flex:1">顯示格線</label>
+      <div class="tog"><div class="k"></div></div>
+    </div>
+    <div class="fr">
+      <div class="f" style="flex:1"><label>格線間距 (cm)</label>
+        <input type="number" value="100">
+        <div style="font-size:8px;color:#aaa;margin-top:2px">例如 100、50、25 cm</div>
+      </div>
+      <div class="f" style="flex:1"><label>格線顏色</label>
+        <div style="display:flex;gap:4px;align-items:flex-start;margin-top:2px">
+          <div style="width:22px;height:22px;background:#DDD5C0;border:1px solid #aaa;border-radius:2px;cursor:pointer;flex-shrink:0"></div>
+          <input value="#DDD5C0" style="flex:1;padding:3px 4px;font-size:10px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)">
+        </div>
+      </div>
+    </div>
+
+    <hr class="mhr">
+    <div class="ms">預設檢視</div>
+    <div class="f"><label>預設縮放 (%)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" value="100" min="10" max="500" style="width:80px;padding:3px 6px;font-size:11px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)">
+        <span style="font-size:9px;color:var(--text-md)">%（使用者仍可在畫布上自行調整）</span>
+      </div>
+    </div>
+
+    <hr class="mhr">
+    <div class="ms">底圖</div>
+    <div class="f"><label>上傳</label>
+      <div style="border:1px dashed var(--panel-bd);border-radius:3px;padding:10px;text-align:center;font-size:10px;color:#aaa;cursor:pointer">🖼 點擊上傳 PNG / JPG</div>
+    </div>
+    <div class="f"><label>比例尺 — 圖片 1 px = ? cm</label>
+      <div style="display:flex;gap:5px;align-items:center">
+        <input type="number" value="0.5" step="0.01" style="width:80px;padding:3px 6px;font-size:11px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)">
+        <span style="font-size:10px;color:var(--text-md)">cm / px — 等比例縮放，不裁切</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button class="pa pr" style="flex:1">套用</button>
+      <button class="pa sc" style="flex:1">取消</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     AI EXPORT MODAL  (shown by default for this mockup)
+══════════════════════════════════════ -->
+<div class="overlay">
+<div class="modal" style="width:560px">
+  <div class="mh">🤖 AI 匯出 — 客廳 <span style="opacity:.5;cursor:pointer">✕</span></div>
+  <div class="mb" style="gap:10px">
+
+    <div class="f"><label>風格預設</label>
+      <select style="width:100%;padding:4px 6px;font-size:11px;font-family:var(--font);border:1px solid var(--panel-bd);border-radius:2px">
+        <option>工業風</option>
+        <option>北歐風</option>
+        <option>現代極簡</option>
+        <option>自訂…</option>
+      </select>
+    </div>
+
+    <!-- Section 1: 6-Grid PNG -->
+    <div class="f" style="margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <label style="margin:0;line-height:1.2">📐 六宮格 PNG (1600×1800px)</label>
+        <button class="pa sc" style="width:auto;margin:0;padding:3px 9px;font-size:9px;line-height:1.2;display:inline-flex;align-items:center">↓ 下載</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#ccc;border:1px solid #aaa;flex-shrink:0">
+          <!-- Front -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="20,3 12,10 28,10" fill="#4A7FA5" fill-opacity="0.16"/>
+              <rect x="10" y="10" width="20" height="20" rx="1.2" fill="none" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="17" x2="16" y2="17" stroke="#2C2416" stroke-width="1.4"/>
+              <path d="M16,17 A6,6 0 0 1 10,23" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="2,1.6"/>
+              <path d="M18.2,3 Q20,1.4 21.8,3 Q20,4.6 18.2,3 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="20" cy="3" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+          <!-- Back -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="20,37 12,30 28,30" fill="#4A7FA5" fill-opacity="0.16"/>
+              <rect x="10" y="10" width="20" height="20" rx="1.2" fill="none" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="17" x2="16" y2="17" stroke="#2C2416" stroke-width="1.4"/>
+              <path d="M16,17 A6,6 0 0 1 10,23" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="2,1.6"/>
+              <path d="M18.2,37 Q20,35.4 21.8,37 Q20,38.6 18.2,37 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="20" cy="37" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+          <!-- Left -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3,20 10,12 10,28" fill="#4A7FA5" fill-opacity="0.16"/>
+              <rect x="10" y="10" width="20" height="20" rx="1.2" fill="none" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="17" x2="16" y2="17" stroke="#2C2416" stroke-width="1.4"/>
+              <path d="M16,17 A6,6 0 0 1 10,23" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="2,1.6"/>
+              <path d="M3,18.2 Q4.6,20 3,21.8 Q1.4,20 3,18.2 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="3" cy="20" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+          <!-- Right -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="37,20 30,12 30,28" fill="#4A7FA5" fill-opacity="0.16"/>
+              <rect x="10" y="10" width="20" height="20" rx="1.2" fill="none" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="17" x2="16" y2="17" stroke="#2C2416" stroke-width="1.4"/>
+              <path d="M16,17 A6,6 0 0 1 10,23" stroke="#4A7FA5" stroke-width="1" fill="none" stroke-dasharray="2,1.6"/>
+              <path d="M37,18.2 Q38.6,20 37,21.8 Q35.4,20 37,18.2 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="37" cy="20" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+          <!-- Ceiling -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="20,30 14,11 26,11" fill="#4A7FA5" fill-opacity="0.16"/>
+              <line x1="10" y1="8" x2="30" y2="8" stroke="#4A7FA5" stroke-width="2.4"/>
+              <line x1="10" y1="8" x2="10" y2="32" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="30" y1="8" x2="30" y2="32" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="32" x2="30" y2="32" stroke="#2C2416" stroke-width="1.4"/>
+              <rect x="10" y="18" width="4" height="14" rx="0.8" fill="#4A7FA5" fill-opacity="0.28" stroke="#2C2416" stroke-width="0.9"/>
+              <path d="M18.2,30 Q20,28.4 21.8,30 Q20,31.6 18.2,30 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="20" cy="30" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+          <!-- Floor -->
+          <div style="width:100px;height:70px;background:#F5F0E8;border:1px solid var(--grid);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 40 40" style="width:48px;height:48px" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="20,10 14,29 26,29" fill="#4A7FA5" fill-opacity="0.16"/>
+              <line x1="10" y1="32" x2="30" y2="32" stroke="#4A7FA5" stroke-width="2.4"/>
+              <line x1="10" y1="8" x2="10" y2="32" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="30" y1="8" x2="30" y2="32" stroke="#2C2416" stroke-width="1.4"/>
+              <line x1="10" y1="8" x2="30" y2="8" stroke="#2C2416" stroke-width="1.4"/>
+              <rect x="10" y="18" width="4" height="14" rx="0.8" fill="#4A7FA5" fill-opacity="0.28" stroke="#2C2416" stroke-width="0.9"/>
+              <path d="M18.2,10 Q20,8.4 21.8,10 Q20,11.6 18.2,10 Z" fill="#F5F0E8" stroke="#4A7FA5" stroke-width="0.9"/>
+              <circle cx="20" cy="10" r="0.75" fill="#4A7FA5"/>
+            </svg>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--text-md);line-height:1.5">2×3 六個立面視角拼圖，純白底，圖片中不烙印任何文字。前／後／左／右是俯視示意圖：眼睛＋視野錐表示正在看哪一面牆，門是固定參考點（四張圖同一個位置）。天花板／地板則改用側剖面圖——加粗標示的線代表正在看的那個面（天花板在上、地板在下），眼睛位在對面看過去。門在兩張圖中位置相同，因為門的位置不會因為視角改變。直接上傳給 Gemini 當風格參考圖。</div>
+      </div>
+    </div>
+
+    <hr class="mhr">
+
+    <!-- Section 2: Prompt — combined with Negative -->
+    <div class="f" style="margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <label style="margin:0;line-height:1.2">📝 Prompt（含負面提示詞）</label>
+        <button class="pa sc" style="width:auto;margin:0;padding:3px 9px;font-size:9px;line-height:1.2;display:inline-flex;align-items:center">⧉ 複製</button>
+      </div>
+      <textarea readonly style="width:100%;height:90px;padding:6px 7px;font-size:10px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px;resize:none;line-height:1.5">Industrial-style living room, 500×400×300cm, exposed brick accent wall, black steel-frame sofa, round wood coffee table, large window on north wall, warm ambient lighting, photorealistic interior render, architectural photography style.
+
+Avoid: distortion, overlapping objects, floating furniture, warped walls, extra doors, blurry lines, text or watermark.</textarea>
+      <div style="font-size:8px;color:#aaa;margin-top:3px">Prompt 內容固定使用英文（AI 生圖模型對英文提示詞理解較穩定），僅介面文字跟隨語言設定切換。</div>
+    </div>
+
+    <!-- Section 3: JSON -->
+    <div class="f" style="margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <label style="margin:0;line-height:1.2;cursor:pointer">▾ JSON (*.json)</label>
+        <div style="display:flex;gap:5px">
+          <button class="pa sc" style="width:auto;margin:0;padding:3px 9px;font-size:9px;line-height:1.2;display:inline-flex;align-items:center">⧉ 複製</button>
+          <button class="pa sc" style="width:auto;margin:0;padding:3px 9px;font-size:9px;line-height:1.2;display:inline-flex;align-items:center">↓ 下載</button>
+        </div>
+      </div>
+      <textarea readonly style="width:100%;height:70px;padding:6px 7px;font-size:9px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px;resize:none;line-height:1.5">{"style":"industrial","room_size_cm":[500,400,300],"views":["front","back","left","right","ceiling","floor"]}</textarea>
+    </div>
+
+    <div style="font-size:8px;color:#aaa;line-height:1.4">
+      提示：把 PNG 上傳給 Gemini → 貼上 Prompt → 一次產生 6 個一致的視角。
+    </div>
+
+    <div style="display:flex;gap:6px;margin-top:2px">
+      <button class="pa sc" style="flex:1;margin:0">關閉</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ELEVATION VIEW (separate state, shown as annotation only)
+══════════════════════════════════════ -->
+<div style="position:fixed;bottom:60px;left:80px;background:var(--bar-top);border-radius:4px;padding:6px 10px;font-size:9px;color:#aaa;font-family:var(--font);pointer-events:none;z-index:50;border:1px solid #5a4a34">
+  <span style="color:#fff;font-weight:bold">立面模式 — 畫布上方顯示視角切換頁籤：</span><br><br>
+  <span style="display:inline-flex;gap:2px">
+    <span style="background:var(--sel);color:#fff;padding:3px 8px;border-radius:3px;font-size:9px">前</span>
+    <span style="background:#2C2416;color:#aaa;padding:3px 8px;border-radius:3px;font-size:9px">後</span>
+    <span style="background:#2C2416;color:#aaa;padding:3px 8px;border-radius:3px;font-size:9px">左</span>
+    <span style="background:#2C2416;color:#aaa;padding:3px 8px;border-radius:3px;font-size:9px">右</span>
+    <span style="background:#2C2416;color:#aaa;padding:3px 8px;border-radius:3px;font-size:9px">天花板</span>
+    <span style="background:#2C2416;color:#aaa;padding:3px 8px;border-radius:3px;font-size:9px">地板</span>
+  </span>
+</div>
+
+<!-- Furniture submenu annotation -->
+<div style="position:fixed;top:118px;left:58px;pointer-events:none;z-index:300">
+  <div class="spop" style="position:relative;left:0;top:0">
+    <div style="font-size:8px;color:#7a6040;padding:2px 8px;letter-spacing:.05em">家具</div>
+    <button><span class="si">▭</span> 矩形</button>
+    <button><span class="si">●</span> 圓形</button>
+    <button><span class="si">△</span> 三角形</button>
+    <div class="sep"></div>
+    <div style="font-size:8px;color:#7a6040;padding:2px 8px;letter-spacing:.05em">結構</div>
+    <button><span class="si">▬</span> 樑</button>
+    <div class="sep"></div>
+    <div style="font-size:8px;color:#7a6040;padding:2px 8px;letter-spacing:.05em">燈具</div>
+    <button><span class="si">💡</span> 吸頂燈</button>
+    <button><span class="si">🕯</span> 立燈</button>
+    <button><span class="si">🪔</span> 檯燈</button>
+  </div>
+</div>
+
+</body>
+</html>
