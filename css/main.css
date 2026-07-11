@@ -60,6 +60,13 @@ body{font-family:var(--font);background:#888;overflow:hidden}
 .zb{width:26px;height:26px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-dk);cursor:pointer;user-select:none}
 #zl{width:26px;height:18px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-md)}
 
+/* Elevation mode — room selector + dynamic view tabs, top of canvas */
+#elevation-bar{position:absolute;top:0;left:0;right:0;height:34px;background:var(--bar-top);display:flex;align-items:center;gap:10px;padding:0 10px;z-index:10;border-bottom:1px solid #1a150e}
+#elevation-room-select{padding:3px 6px;font-size:10px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px;max-width:140px}
+.etabs{display:flex;background:#1a150e;border-radius:4px;overflow:hidden}
+.etab{padding:4px 9px;font-size:10px;font-family:var(--font);color:#a08060;border:none;background:transparent;cursor:pointer;white-space:nowrap}
+.etab.active{background:var(--sel);color:#fff}
+
 /* Minimap — top-right corner (below the horizontal ruler) */
 #minimap{position:absolute;top:26px;right:12px;width:180px;height:130px;background:rgba(245,240,232,.94);border:1px solid var(--grid);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:5;overflow:hidden}
 #minimap-canvas{display:block;cursor:pointer}
