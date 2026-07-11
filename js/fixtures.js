@@ -80,6 +80,10 @@
   // footprint would then fall outside the room and fail containment)
   window.nearestWallGeometry = nearestWall;
   window.inwardNormalFor = inwardNormal;
+  // exposed so elevation.js can enumerate a room's actual walls (dynamic view
+  // tabs — matches whatever shape the room actually has, not a fixed Front/
+  // Back/Left/Right that wouldn't make sense for a 3-wall triangle room)
+  window.roomWallsFor = roomWalls;
 
   // Shared reposition logic — used by both canvas drag and direct panel edits
   // of "distance from wall start", so both paths get the same clamping +
@@ -136,6 +140,63 @@
   // ── rendering ────────────────────────────────────────────────────────────
   const groupById = {};
 
+  // Builds the door/window visual (gap+leaf+swing-arc, or thick window line)
+  // as a standalone Konva.Group — shared by this module's own floor-plan
+  // layer AND elevation.js's Floor/Ceiling views, so the exact same door-swing
+  // language shows up everywhere the opening is visible, not just here.
+  // offXCm/offYCm shift the drawing into a different origin (elevation.js's
+  // room-relative frame instead of this module's world-cm frame); pass 0,0
+  // for world coordinates.
+  window.buildFixtureVisual = function buildFixtureVisual(f, wall, room, offXCm, offYCm) {
+    offXCm = offXCm || 0; offYCm = offYCm || 0;
+    const len = wallLength(wall);
+    const ux = (wall.x2 - wall.x1) / len, uy = (wall.y2 - wall.y1) / len; // unit vector along wall
+    const p0 = { x: wall.x1 + ux * f.posOnWall - offXCm, y: wall.y1 + uy * f.posOnWall - offYCm };
+    const p1 = { x: wall.x1 + ux * (f.posOnWall + f.width) - offXCm, y: wall.y1 + uy * (f.posOnWall + f.width) - offYCm };
+    const inward = inwardNormal(wall, room);
+
+    const group = new Konva.Group({ listening: true });
+    const isSelected = UI().selectedIds.includes(f.id);
+    const strokeW = isSelected ? 3 : 2;
+
+    if (f.type === 'window') {
+      // drawn thicker than the wall itself (wallThickness + 5cm) so it
+      // visibly protrudes on both faces instead of blending into the wall
+      // stroke and becoming hard to click
+      const windowThicknessPx = cmToPx(window.appState.settings.wallThickness + 5);
+      group.add(new Konva.Line({
+        points: [cmToPx(p0.x), cmToPx(p0.y), cmToPx(p1.x), cmToPx(p1.y)],
+        stroke: isSelected ? '#C17F3B' : '#4A7FA5', strokeWidth: windowThicknessPx,
+        hitStrokeWidth: 14, name: 'fixtureShape',
+      }));
+    } else {
+      // door: a light gap segment + swing-arc opening into the room
+      // (reuses the leaf-line + dashed-arc convention from the approved mockup)
+      group.add(new Konva.Line({
+        points: [cmToPx(p0.x), cmToPx(p0.y), cmToPx(p1.x), cmToPx(p1.y)],
+        stroke: '#F5F0E8', strokeWidth: strokeW * 2.4, name: 'fixtureShape', hitStrokeWidth: 14,
+      }));
+      const hingeX = cmToPx(p0.x), hingeY = cmToPx(p0.y);
+      const leafX = hingeX + inward.x * cmToPx(f.width), leafY = hingeY + inward.y * cmToPx(f.width);
+      group.add(new Konva.Line({
+        points: [hingeX, hingeY, leafX, leafY],
+        stroke: isSelected ? '#C17F3B' : '#2C2416', strokeWidth: 1.5, listening: false,
+      }));
+      const scale = window.stage.scaleX();
+      const radiusPx = cmToPx(f.width);
+      // dashed quarter-circle from the open leaf end to the far jamb, swept
+      // around the hinge — sweep direction picked so it curves through the
+      // inward side rather than through the wall.
+      const cross = ux * inward.y - uy * inward.x;
+      const sweep = cross >= 0 ? 1 : 0;
+      group.add(new Konva.Path({
+        data: `M${leafX},${leafY} A${radiusPx},${radiusPx} 0 0 ${sweep} ${cmToPx(p1.x)},${cmToPx(p1.y)}`,
+        stroke: isSelected ? '#C17F3B' : '#4A7FA5', strokeWidth: 1 / scale, dash: [4 / scale, 3 / scale], listening: false,
+      }));
+    }
+    return group;
+  };
+
   function render() {
     const layer = window.fixturesLayer;
     layer.destroyChildren();
@@ -145,52 +206,8 @@
       const wall = wallOf(f.roomId, f.wallId);
       if (!wall) return; // room/wall vanished (room deleted) — nothing to draw
       const room = window.appState.rooms.find((r) => r.id === f.roomId);
-      const len = wallLength(wall);
-      const ux = (wall.x2 - wall.x1) / len, uy = (wall.y2 - wall.y1) / len; // unit vector along wall
-      const p0 = { x: wall.x1 + ux * f.posOnWall, y: wall.y1 + uy * f.posOnWall };
-      const p1 = { x: wall.x1 + ux * (f.posOnWall + f.width), y: wall.y1 + uy * (f.posOnWall + f.width) };
-      const inward = inwardNormal(wall, room);
-
-      const group = new Konva.Group({ listening: true });
+      const group = window.buildFixtureVisual(f, wall, room, 0, 0);
       groupById[f.id] = group;
-      const isSelected = UI().selectedIds.includes(f.id);
-      const strokeW = isSelected ? 3 : 2;
-
-      if (f.type === 'window') {
-        // drawn thicker than the wall itself (wallThickness + 5cm) so it
-        // visibly protrudes on both faces instead of blending into the wall
-        // stroke and becoming hard to click
-        const windowThicknessPx = cmToPx(window.appState.settings.wallThickness + 5);
-        group.add(new Konva.Line({
-          points: [cmToPx(p0.x), cmToPx(p0.y), cmToPx(p1.x), cmToPx(p1.y)],
-          stroke: isSelected ? '#C17F3B' : '#4A7FA5', strokeWidth: windowThicknessPx,
-          hitStrokeWidth: 14, name: 'fixtureShape',
-        }));
-      } else {
-        // door: a light gap segment + swing-arc opening into the room
-        // (reuses the leaf-line + dashed-arc convention from the approved mockup)
-        group.add(new Konva.Line({
-          points: [cmToPx(p0.x), cmToPx(p0.y), cmToPx(p1.x), cmToPx(p1.y)],
-          stroke: '#F5F0E8', strokeWidth: strokeW * 2.4, name: 'fixtureShape', hitStrokeWidth: 14,
-        }));
-        const hingeX = cmToPx(p0.x), hingeY = cmToPx(p0.y);
-        const leafX = hingeX + inward.x * cmToPx(f.width), leafY = hingeY + inward.y * cmToPx(f.width);
-        group.add(new Konva.Line({
-          points: [hingeX, hingeY, leafX, leafY],
-          stroke: isSelected ? '#C17F3B' : '#2C2416', strokeWidth: 1.5, listening: false,
-        }));
-        const scale = window.stage.scaleX();
-        const radiusPx = cmToPx(f.width);
-        // dashed quarter-circle from the open leaf end to the far jamb, swept
-        // around the hinge — sweep direction picked so it curves through the
-        // inward side rather than through the wall.
-        const cross = ux * inward.y - uy * inward.x;
-        const sweep = cross >= 0 ? 1 : 0;
-        group.add(new Konva.Path({
-          data: `M${leafX},${leafY} A${radiusPx},${radiusPx} 0 0 ${sweep} ${cmToPx(p1.x)},${cmToPx(p1.y)}`,
-          stroke: isSelected ? '#C17F3B' : '#4A7FA5', strokeWidth: 1 / scale, dash: [4 / scale, 3 / scale], listening: false,
-        }));
-      }
 
       group.on('click tap', (e) => {
         if (window.consumeClickSuppression()) return;
@@ -245,7 +262,7 @@
     if (overlapsExisting(nearest.room.id, nearest.wall.id, pos, preset.width, null)) return null;
 
     const id = window.appState.createFixtureId();
-    window.appState.fixtures.push({
+    const item = {
       id,
       name: window.t('fixtures.' + type) + ' ' + (window.appState.fixtures.length + 1),
       type,
@@ -255,7 +272,9 @@
       width: preset.width,
       heightFromFloor: preset.heightFromFloor,
       objectHeight: preset.objectHeight,
-    });
+    };
+    window.recomputeTriple(item, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], nearest.room.height, null);
+    window.appState.fixtures.push(item);
     UI().selectedIds = [id];
     UI().activeTool = 'select';
     return id;
