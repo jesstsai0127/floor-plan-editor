@@ -15,11 +15,9 @@
   }
   window.elevationCurrentRoom = currentRoom;
 
-  const WALL_LABEL_KEYS = { top: 'elevation.wallTop', right: 'elevation.wallRight', bottom: 'elevation.wallBottom', left: 'elevation.wallLeft', hyp: 'elevation.wallHyp' };
+  const WALL_LABEL_KEYS = { top: 'elevation.wallTop', right: 'elevation.wallRight', bottom: 'elevation.wallBottom', left: 'elevation.wallLeft' };
 
-  // dynamic view tabs: this room's actual walls (whatever shape it has) plus
-  // Ceiling/Floor — a triangle room simply doesn't offer a "Back" tab, rather
-  // than pretending it has one
+  // dynamic view tabs: this room's actual walls plus Ceiling/Floor
   function viewsFor(room) {
     if (!room) return [];
     const walls = window.roomWallsFor(room).map((w) => ({ id: w.id, label: window.t(WALL_LABEL_KEYS[w.id] || w.id) }));
@@ -34,10 +32,7 @@
   // front of you, not the one at your back. So the "Top" tab renders the
   // Bottom wall's fixtures/furniture, and vice versa; Left/Right likewise.
   // Confirmed with the user against a concrete case (window stored on the
-  // Bottom wall must appear under the Top tab). Rect rooms have a clean
-  // opposite for every wall; a triangle room's 3 walls (top/hyp/left) have
-  // no such pairing, so those are left unmapped (tab shows its own wall)
-  // until there's a clear convention for that case.
+  // Bottom wall must appear under the Top tab).
   const OPPOSITE_WALL_ID = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
   function wallForView(room, view) {
     const targetId = OPPOSITE_WALL_ID[view] || view;
@@ -115,9 +110,8 @@
   // from render() since the panel needs it even while nothing is re-drawing.
   //   kind: 'furn' | 'sock' | 'fix'
   // Width is only safely editable (maps 1:1 back to item.w) when the item
-  // isn't rotated AND the wall itself is axis-aligned — on a diagonal wall
-  // (a triangle room's hypotenuse) even an unrotated item's projected extent
-  // isn't equal to its stored w, so width switches to read-only there too.
+  // isn't rotated — a rotated item's projected extent on this wall isn't
+  // equal to its stored w, so width switches to read-only there.
   // Position (left/right) is always editable: translating an item by a
   // vector along the wall's own direction changes its u-coordinate without
   // touching its perpendicular depth, regardless of rotation or wall angle.
@@ -243,17 +237,9 @@
       // though it inverts the standalone real-world "Floor Plan is always
       // drawn top-down" terminology.
       const contentView = view === 'ceiling' ? 'floor' : 'ceiling';
-      // room outline — drawn even with nothing in it, so the view never looks
-      // blank/broken; matches the room's own shape (rect or right-triangle)
+      // room outline — drawn even with nothing in it, so the view never looks blank/broken
       const wPx = cmToPx(room.w), hPx = cmToPx(room.h);
-      if (room.shape === 'triangle') {
-        layer.add(new Konva.Line({
-          points: [0, 0, wPx, 0, 0, hPx], closed: true,
-          stroke: '#2C2416', strokeWidth: 2, listening: false,
-        }));
-      } else {
-        layer.add(new Konva.Rect({ x: 0, y: 0, width: wPx, height: hPx, stroke: '#2C2416', strokeWidth: 2, listening: false }));
-      }
+      layer.add(new Konva.Rect({ x: 0, y: 0, width: wPx, height: hPx, stroke: '#2C2416', strokeWidth: 2, listening: false }));
       // dimension labels — same convention as room.js's own floor-plan labels
       const dimFont = 10 / scale;
       if (wPx * scale > 26) {
