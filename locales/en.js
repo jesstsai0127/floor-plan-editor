@@ -125,4 +125,25 @@ window.LOCALES['en-US'] = {
   'electricals.title': 'Sockets',
   'electricals.socket': 'Socket',
   'electricals.fromFloor': 'from floor',
+
+  // vertical dimensions (furniture/openings/sockets — shown in both modes)
+  'panel.verticalDimensions': 'Vertical Position',
+  'panel.distanceFromCeiling': 'From ceiling (cm)',
+
+  // horizontal dimensions (elevation mode only, view-dependent)
+  'panel.horizontalDimensions': 'Horizontal Position (this view)',
+  'panel.fromLeft': 'From left (cm)',
+  'panel.fromRight': 'From right (cm)',
+  'panel.rotatedHint': 'Rotated items: adjust position/size on the floor plan instead',
+
+  // elevation mode
+  'mode.needRoom': 'Create a room first',
+  'elevation.room': 'Room',
+  'elevation.wallTop': 'Top',
+  'elevation.wallRight': 'Right',
+  'elevation.wallBottom': 'Bottom',
+  'elevation.wallLeft': 'Left',
+  'elevation.wallHyp': 'Hypotenuse',
+  'elevation.ceiling': 'Ceiling',
+  'elevation.floor': 'Floor',
 };
