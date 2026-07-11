@@ -12,15 +12,19 @@
   const cmToPx = (cm) => cm * window.BASE_SCALE;
   const pxToCm = (px) => px / window.BASE_SCALE;
 
-  // tool id → { shape, furnitureType, w, h, color, label }
+  // tool id → { shape, furnitureType, w, h, color, label, heightFromFloor, objectHeight }
+  // heightFromFloor/objectHeight are just starting points (a room's actual
+  // height may differ from settings.defaultRoomHeight) — commitFurniture runs
+  // them through recomputeTriple against the real room height, which derives
+  // distanceFromCeiling as the third value.
   const PRESETS = {
-    'furn-rect': { shape: 'rect', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)' },
-    'furn-circle': { shape: 'circle', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)' },
-    'furn-triangle': { shape: 'triangle', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)' },
-    'furn-beam': { shape: 'rect', furnitureType: 'beam', w: 200, h: 20, color: 'rgba(120,110,100,0.55)' },
-    'furn-light-ceiling': { shape: 'circle', furnitureType: 'ceiling-light', w: 30, h: 30, color: 'rgba(255,220,120,0.55)' },
-    'furn-light-floor': { shape: 'circle', furnitureType: 'floor-lamp', w: 25, h: 25, color: 'rgba(255,220,120,0.55)' },
-    'furn-light-table': { shape: 'circle', furnitureType: 'table-lamp', w: 20, h: 20, color: 'rgba(255,220,120,0.55)' },
+    'furn-rect': { shape: 'rect', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)', heightFromFloor: 0, objectHeight: 75 },
+    'furn-circle': { shape: 'circle', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)', heightFromFloor: 0, objectHeight: 75 },
+    'furn-triangle': { shape: 'triangle', furnitureType: 'generic', w: 80, h: 80, color: 'rgba(200,180,150,0.45)', heightFromFloor: 0, objectHeight: 75 },
+    'furn-beam': { shape: 'rect', furnitureType: 'beam', w: 200, h: 20, color: 'rgba(120,110,100,0.55)', heightFromFloor: 260, objectHeight: 20 },
+    'furn-light-ceiling': { shape: 'circle', furnitureType: 'ceiling-light', w: 30, h: 30, color: 'rgba(255,220,120,0.55)', heightFromFloor: 265, objectHeight: 15 },
+    'furn-light-floor': { shape: 'circle', furnitureType: 'floor-lamp', w: 25, h: 25, color: 'rgba(255,220,120,0.55)', heightFromFloor: 0, objectHeight: 150 },
+    'furn-light-table': { shape: 'circle', furnitureType: 'table-lamp', w: 20, h: 20, color: 'rgba(255,220,120,0.55)', heightFromFloor: 75, objectHeight: 35 },
   };
   window.FURNITURE_PRESETS = PRESETS;
 
@@ -87,6 +91,10 @@
     return footprintSamples(item).every((p) => window.pointInAnyRoom(p.x, p.y, roomsList));
   }
   window.isFurnitureFullyInRooms = isFullyInRooms;
+  // exposed so elevation.js can project a furniture item's actual (rotated,
+  // shape-aware) footprint onto a wall's local coordinate frame, same sampling
+  // used for room-containment testing above
+  window.furnitureFootprintSamples = footprintSamples;
 
   // Rotation pivot: offsetX/offsetY are set to the shape's own centre, and
   // its local x/y are positioned to match (w/2, h/2) — this makes the node's
@@ -228,6 +236,32 @@
         shape.strokeWidth(2.5);
       }
 
+      // two separate labels, same split as room.js: the NAME sits centred
+      // inside the shape (single-line, hidden entirely if it doesn't fit —
+      // no wrap/ellipsis), the SIZE sits above it outside the fill, same
+      // convention as room.js's own w/h labels around the room's edges.
+      // Both are siblings of the rotated shape, not children of it, so the
+      // text itself always stays upright regardless of the item's rotation.
+      const scale = window.stage.scaleX();
+      const wPx = cmToPx(item.w), hPx = cmToPx(item.h);
+      const dimFont = 9 / scale;
+      const nameFont = 10 / scale;
+      const nameNode = new Konva.Text({
+        text: item.name, fontFamily: 'Courier New, monospace', fontSize: nameFont, fill: '#2C2416',
+        wrap: 'none', listening: false,
+      });
+      if (nameNode.getTextWidth() <= wPx - 6 / scale && hPx * scale > 16) {
+        nameNode.setAttrs({ width: wPx, height: hPx, align: 'center', verticalAlign: 'middle' });
+        group.add(nameNode);
+      }
+      if (wPx * scale > 28 && hPx * scale > 14) {
+        group.add(new Konva.Text({
+          text: item.shape === 'circle' ? `⌀${item.w}` : `${item.w}×${item.h}`,
+          fontFamily: 'Courier New, monospace', fontSize: dimFont, fill: '#4A7FA5',
+          width: wPx, align: 'center', y: -dimFont * 1.6, listening: false,
+        }));
+      }
+
       group.on('click tap', (e) => {
         if (window.consumeClickSuppression()) return;
         if (UI().activeTool !== 'select') return;
@@ -320,13 +354,16 @@
     if (!isFullyInRooms(candidate)) return null;
     const room = primaryRoomFor(candidate);
     const id = window.appState.createFurnitureId();
-    window.appState.furniture.push({
+    const item = {
       id,
       name: window.t('furniture.' + preset.furnitureType) + ' ' + (window.appState.furniture.length + 1),
       roomId: room.id,
       x: Math.round(xCm), y: Math.round(yCm), w: preset.w, h: preset.h,
       shape: preset.shape, furnitureType: preset.furnitureType, color: preset.color, rotation: 0,
-    });
+      heightFromFloor: preset.heightFromFloor, objectHeight: preset.objectHeight,
+    };
+    window.recomputeTriple(item, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, null);
+    window.appState.furniture.push(item);
     UI().selectedIds = [id];
     UI().activeTool = 'select';
     return id;
