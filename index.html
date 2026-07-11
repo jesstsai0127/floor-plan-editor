@@ -52,13 +52,9 @@
       <div class="tsep"></div>
 
       <div class="tgrp">
-        <button class="tt" :class="{active: appState.ui.activeTool.startsWith('room')}" @click="roomMenuOpen = !roomMenuOpen">
-          <span class="ic">▭</span><span class="lb">{{ t('toolbar.room') }} ▾</span>
+        <button class="tt" :class="{active: appState.ui.activeTool.startsWith('room')}" @click="selectTool('room-rect')">
+          <span class="ic">▭</span><span class="lb">{{ t('toolbar.room') }}</span>
         </button>
-        <div class="spop" v-if="roomMenuOpen">
-          <button @click="selectTool('room-rect'); roomMenuOpen = false"><span class="si">▭</span> {{ t('toolbar.roomRect') }}</button>
-          <button @click="selectTool('room-triangle'); roomMenuOpen = false"><span class="si">△</span> {{ t('toolbar.roomTriangle') }}</button>
-        </div>
       </div>
       <div class="tsep"></div>
 
@@ -451,7 +447,6 @@ window.restoreAutosave();
 // no event bindings (clicks/drags on it do nothing).
 Vue.createApp({
   setup() {
-    const roomMenuOpen = Vue.ref(false);
     const furnMenuOpen = Vue.ref(false);
     const openMenuOpen = Vue.ref(false);
     const settingsOpen = Vue.ref(false);
@@ -639,7 +634,6 @@ Vue.createApp({
     return {
       appState: window.appState,
       t: window.t,
-      roomMenuOpen,
       furnMenuOpen,
       openMenuOpen,
       settingsOpen,
