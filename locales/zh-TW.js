@@ -17,7 +17,6 @@ window.LOCALES['zh-TW'] = {
   'toolbar.select': '選取',
   'toolbar.room': '房間',
   'toolbar.roomRect': '矩形',
-  'toolbar.roomTriangle': '三角形',
   'toolbar.furniture': '家具',
   'toolbar.catFurniture': '家具',
   'toolbar.furnRect': '矩形',
@@ -143,7 +142,6 @@ window.LOCALES['zh-TW'] = {
   'elevation.wallRight': '右牆',
   'elevation.wallBottom': '下牆',
   'elevation.wallLeft': '左牆',
-  'elevation.wallHyp': '斜邊牆',
   'elevation.ceiling': '天花板',
   'elevation.floor': '地板',
 };
