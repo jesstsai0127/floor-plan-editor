@@ -29,7 +29,7 @@
     <button class="tbtn dim" disabled title="Coming in a later phase">🗑</button>
     <div class="vd"></div>
 
-    <button class="tbtn dim" disabled title="Coming in a later phase">🤖 {{ t('topbar.aiExport') }}</button>
+    <button class="tbtn" :class="{dim: !appState.rooms.length}" :disabled="!appState.rooms.length" :title="appState.rooms.length ? '' : t('mode.needRoom')" @click="openAiExport">🤖 {{ t('topbar.aiExport') }}</button>
     <div class="vd"></div>
     <button class="tbtn dim" disabled title="Coming in a later phase">↓ {{ t('topbar.export') }} ▾</button>
 
@@ -419,6 +419,81 @@
       </div>
     </div>
   </div>
+
+  <!-- AI Export modal (Phase 5): produces material for an external image
+       model (Gemini/Imagen) — no API call happens here, just a 6-grid PNG
+       and three copy-paste text formats. See ai-export.js. -->
+  <div class="overlay" v-if="appState.ui.aiExportOpen" @click.self="closeAiExport">
+    <div class="modal" style="width:560px;max-height:88vh;display:flex;flex-direction:column">
+      <div class="mh">🤖 {{ t('aiExport.title') }} <span @click="closeAiExport">✕</span></div>
+      <div class="mb" style="overflow-y:auto">
+        <div class="ms">{{ t('aiExport.rooms') }}</div>
+        <div class="aix-rooms">
+          <label v-for="room in appState.rooms" :key="room.id">
+            <input type="checkbox" :checked="appState.ui.aiExportRoomIds.includes(room.id)" @change="toggleAiExportRoom(room.id)">
+            {{ room.name }}
+          </label>
+        </div>
+
+        <div class="fr">
+          <div class="f" style="flex:1">
+            <label>{{ t('aiExport.style') }}</label>
+            <select v-model="appState.ui.aiExportStylePreset">
+              <option value="Industrial">{{ t('aiExport.styleIndustrial') }}</option>
+              <option value="Scandinavian">{{ t('aiExport.styleScandinavian') }}</option>
+              <option value="Modern Minimalist">{{ t('aiExport.styleModernMinimalist') }}</option>
+              <option value="Custom">{{ t('aiExport.styleCustom') }}</option>
+            </select>
+          </div>
+          <div class="f" style="flex:1" v-if="appState.ui.aiExportStylePreset === 'Custom'">
+            <label>{{ t('aiExport.customStyle') }}</label>
+            <input v-model="appState.ui.aiExportCustomStyle" :placeholder="t('aiExport.customStylePlaceholder')" @change="regenerateAiExport">
+          </div>
+        </div>
+
+        <hr class="mhr">
+
+        <template v-if="appState.ui.aiExportRoomIds.length > 1">
+          <div class="ms">{{ t('aiExport.view') }}</div>
+          <div class="etabs" style="flex-wrap:wrap">
+            <button class="etab" :class="{active: !appState.ui.aiExportViewRoomId}" @click="selectAiExportView(null)">{{ t('aiExport.combined') }}</button>
+            <button v-for="room in aiExportSelectedRooms" :key="room.id" class="etab" :class="{active: appState.ui.aiExportViewRoomId === room.id}" @click="selectAiExportView(room.id)">{{ room.name }}</button>
+          </div>
+        </template>
+
+        <div class="etabs">
+          <button class="etab" :class="{active: appState.ui.aiExportTab === 'png'}" @click="appState.ui.aiExportTab = 'png'">{{ t('aiExport.tabPng') }}</button>
+          <button class="etab" :class="{active: appState.ui.aiExportTab === 'prompt'}" @click="appState.ui.aiExportTab = 'prompt'">{{ t('aiExport.tabPrompt') }}</button>
+          <button class="etab" :class="{active: appState.ui.aiExportTab === 'json'}" @click="appState.ui.aiExportTab = 'json'">{{ t('aiExport.tabJson') }}</button>
+          <button class="etab" :class="{active: appState.ui.aiExportTab === 'negative'}" @click="appState.ui.aiExportTab = 'negative'">{{ t('aiExport.tabNegative') }}</button>
+        </div>
+
+        <div v-if="!appState.ui.aiExportRoomIds.length" class="aix-hint">{{ t('aiExport.noRooms') }}</div>
+        <div v-else-if="aiExportGenerating" class="aix-hint">{{ t('aiExport.generating') }}</div>
+        <template v-else>
+          <div v-if="appState.ui.aiExportTab === 'png'">
+            <img v-if="aiExportPngUrl" class="aix-png" :src="aiExportPngUrl">
+            <button class="pa pr" :disabled="!aiExportPngUrl" @click="downloadAiExportPng">⬇ {{ t('aiExport.download') }}</button>
+          </div>
+          <div v-else-if="appState.ui.aiExportTab === 'prompt'">
+            <textarea class="aix-ta" readonly rows="9" :value="aiExportPromptText"></textarea>
+            <button class="pa sc" @click="copyAiExportText(aiExportPromptText, 'prompt')">{{ aiExportCopiedTab === 'prompt' ? t('aiExport.copied') : t('aiExport.copy') }}</button>
+          </div>
+          <div v-else-if="appState.ui.aiExportTab === 'json'">
+            <textarea class="aix-ta" readonly rows="9" :value="aiExportJsonText"></textarea>
+            <button class="pa sc" @click="copyAiExportText(aiExportJsonText, 'json')">{{ aiExportCopiedTab === 'json' ? t('aiExport.copied') : t('aiExport.copy') }}</button>
+          </div>
+          <div v-else-if="appState.ui.aiExportTab === 'negative'">
+            <textarea class="aix-ta" readonly rows="4" :value="aiExportNegativeText"></textarea>
+            <button class="pa sc" @click="copyAiExportText(aiExportNegativeText, 'negative')">{{ aiExportCopiedTab === 'negative' ? t('aiExport.copied') : t('aiExport.copy') }}</button>
+          </div>
+        </template>
+
+        <hr class="mhr">
+        <div class="aix-hint">{{ t('aiExport.flowHint') }}</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Vendor libs (classic scripts, no ES modules — avoids file:// CORS issues) -->
@@ -631,12 +706,123 @@ Vue.createApp({
       window.appState.ui.selectedIds = [item.id];
     }
 
+    // ── AI Export (Phase 5) ─────────────────────────────────────────────
+    const aiExportSelectedRooms = Vue.computed(() =>
+      window.appState.rooms.filter((r) => window.appState.ui.aiExportRoomIds.includes(r.id))
+    );
+    const aiExportPngUrl = Vue.ref('');
+    const aiExportPromptText = Vue.ref('');
+    const aiExportJsonText = Vue.ref('');
+    const aiExportNegativeText = Vue.ref('');
+    const aiExportGenerating = Vue.ref(false);
+    const aiExportCopiedTab = Vue.ref('');
+
+    async function regenerateAiExport() {
+      const S = window.appState.ui;
+      const selected = aiExportSelectedRooms.value;
+      if (!selected.length) {
+        aiExportPngUrl.value = ''; aiExportPromptText.value = ''; aiExportJsonText.value = ''; aiExportNegativeText.value = '';
+        return;
+      }
+      aiExportGenerating.value = true;
+      try {
+        const combined = selected.length > 1 && !S.aiExportViewRoomId;
+        if (combined) {
+          aiExportPngUrl.value = await window.buildCombinedGridPng(selected);
+          aiExportPromptText.value = window.buildCombinedPromptText(selected);
+          aiExportJsonText.value = window.buildCombinedJsonPrompt(selected);
+        } else {
+          const room = selected.find((r) => r.id === S.aiExportViewRoomId) || selected[0];
+          aiExportPngUrl.value = await window.buildSixGridPng(room);
+          aiExportPromptText.value = window.buildPromptText(room);
+          aiExportJsonText.value = window.buildJsonPrompt(room);
+        }
+        aiExportNegativeText.value = window.buildNegativePrompt();
+      } finally {
+        aiExportGenerating.value = false;
+      }
+    }
+
+    function openAiExport() {
+      const S = window.appState;
+      if (!S.rooms.length) return;
+      if (!S.ui.aiExportRoomIds.length || S.ui.aiExportRoomIds.some((id) => !S.rooms.some((r) => r.id === id))) {
+        S.ui.aiExportRoomIds = S.rooms.map((r) => r.id);
+      }
+      S.ui.aiExportViewRoomId = S.ui.aiExportRoomIds.length === 1 ? S.ui.aiExportRoomIds[0] : null;
+      S.ui.aiExportTab = 'png';
+      S.ui.aiExportOpen = true;
+    }
+    function closeAiExport() { window.appState.ui.aiExportOpen = false; }
+    function toggleAiExportRoom(id) {
+      const S = window.appState.ui;
+      const set = new Set(S.aiExportRoomIds);
+      if (set.has(id)) set.delete(id); else set.add(id);
+      S.aiExportRoomIds = Array.from(set);
+      if (S.aiExportRoomIds.length <= 1) S.aiExportViewRoomId = S.aiExportRoomIds[0] || null;
+      else if (S.aiExportViewRoomId && !S.aiExportRoomIds.includes(S.aiExportViewRoomId)) S.aiExportViewRoomId = null;
+    }
+    function selectAiExportView(id) { window.appState.ui.aiExportViewRoomId = id; }
+
+    async function copyAiExportText(text, tabName) {
+      let copied = false;
+      // navigator.clipboard needs a secure context (https, or localhost) — this
+      // app is also commonly served plain http:// on a LAN IP (see README), so
+      // fall back to the classic execCommand selection-copy trick there
+      if (navigator.clipboard) {
+        try { await navigator.clipboard.writeText(text); copied = true; } catch (e) { /* fall through to legacy path */ }
+      }
+      if (!copied) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { copied = document.execCommand('copy'); } catch (e) { /* nothing more we can do */ }
+        document.body.removeChild(ta);
+      }
+      if (copied) {
+        aiExportCopiedTab.value = tabName;
+        setTimeout(() => { if (aiExportCopiedTab.value === tabName) aiExportCopiedTab.value = ''; }, 1500);
+      }
+    }
+    function downloadAiExportPng() {
+      if (!aiExportPngUrl.value) return;
+      const S = window.appState;
+      const combined = S.ui.aiExportRoomIds.length > 1 && !S.ui.aiExportViewRoomId;
+      const room = S.rooms.find((r) => r.id === (S.ui.aiExportViewRoomId || S.ui.aiExportRoomIds[0]));
+      const a = document.createElement('a');
+      a.href = aiExportPngUrl.value;
+      a.download = combined ? 'floorplan-ai-export-combined.png' : `floorplan-ai-export-${(room && room.name) || 'room'}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    Vue.watch(
+      () => [window.appState.ui.aiExportOpen, window.appState.ui.aiExportRoomIds.join(','), window.appState.ui.aiExportViewRoomId, window.appState.ui.aiExportStylePreset],
+      () => { if (window.appState.ui.aiExportOpen) regenerateAiExport(); }
+    );
+
     return {
       appState: window.appState,
       t: window.t,
       furnMenuOpen,
       openMenuOpen,
       settingsOpen,
+      aiExportSelectedRooms,
+      aiExportPngUrl,
+      aiExportPromptText,
+      aiExportJsonText,
+      aiExportNegativeText,
+      aiExportGenerating,
+      aiExportCopiedTab,
+      openAiExport,
+      closeAiExport,
+      toggleAiExportRoom,
+      selectAiExportView,
+      copyAiExportText,
+      downloadAiExportPng,
+      regenerateAiExport,
       selectedRoom,
       selectedRooms,
       selectedFurnitureItem,
@@ -677,6 +863,7 @@ Vue.createApp({
 <script src="js/fixtures.js"></script>
 <script src="js/electricals.js"></script>
 <script src="js/elevation.js"></script>
+<script src="js/ai-export.js"></script>
 <script src="js/minimap.js"></script>
 </body>
 </html>
