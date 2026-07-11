@@ -32,31 +32,6 @@
       strokeWidth,
       name: 'roomShape',
     };
-    if (room.shape === 'triangle') {
-      return new Konva.Shape({
-        ...common,
-        sceneFunc: (ctx, shape) => {
-          const w = shape.width();
-          const h = shape.height();
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(w, 0);
-          ctx.lineTo(0, h);
-          ctx.closePath();
-          ctx.fillStrokeShape(shape);
-        },
-        hitFunc: (ctx, shape) => {
-          const w = shape.width();
-          const h = shape.height();
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(w, 0);
-          ctx.lineTo(0, h);
-          ctx.closePath();
-          ctx.fillStrokeShape(shape);
-        },
-      });
-    }
     return new Konva.Rect(common);
   }
 
@@ -294,7 +269,7 @@
 
   const roomById = (id) => window.appState.rooms.find((r) => r.id === id);
 
-  function commitRoom(xCm, yCm, wCm, hCm, shape) {
+  function commitRoom(xCm, yCm, wCm, hCm) {
     const id = window.appState.createRoomId();
     const color = ROOM_COLORS[window.appState.rooms.length % ROOM_COLORS.length];
     window.appState.rooms.push({
@@ -302,7 +277,7 @@
       name: window.t('room.defaultName') + ' ' + (window.appState.rooms.length + 1),
       x: Math.round(xCm), y: Math.round(yCm), w: Math.round(wCm), h: Math.round(hCm),
       height: window.appState.settings.defaultRoomHeight,
-      color, shape: shape || 'rect',
+      color, shape: 'rect',
     });
     UI().selectedIds = [id];
     UI().activeTool = 'select';
@@ -370,12 +345,12 @@
   };
 
   // ── draw-by-drag ──────────────────────────────────────────────────────────
-  let draw = null; // { x0, y0, shape, node }
+  let draw = null; // { x0, y0, node }
 
   window.stage.on('mousedown touchstart', () => {
     if (window.isSpaceHeld()) return;
     const tool = UI().activeTool;
-    if (tool !== 'room-rect' && tool !== 'room-triangle') return;
+    if (tool !== 'room-rect') return;
     const p = window.worldPointer();
     if (!p) return;
     const stops = window.allStops(null);
@@ -388,7 +363,7 @@
       fill: 'rgba(193,127,59,0.08)', listening: false,
     });
     window.guideLayer.add(node);
-    draw = { x0, y0, shape: tool === 'room-triangle' ? 'triangle' : 'rect', node };
+    draw = { x0, y0, node };
   });
 
   window.stage.on('mousemove touchmove', () => {
@@ -413,12 +388,11 @@
     const yCm = pxToCm(node.y());
     const wCm = pxToCm(node.width());
     const hCm = pxToCm(node.height());
-    const shape = draw.shape;
     node.destroy();
     window.clearGuides();
     draw = null;
     if (wCm < MIN_ROOM_CM || hCm < MIN_ROOM_CM) return; // treat a stray click as no-op
-    commitRoom(xCm, yCm, wCm, hCm, shape);
+    commitRoom(xCm, yCm, wCm, hCm);
     window.suppressNextCanvasClick(); // don't let the trailing click deselect the new room
   });
 
