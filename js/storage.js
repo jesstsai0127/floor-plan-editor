@@ -40,6 +40,25 @@
     });
   }
 
+  // Phase 4 added room.height and the heightFromFloor/objectHeight/
+  // distanceFromCeiling/heightOrder vertical-dimension fields — saves from
+  // before that (Phase 1-3 testing) won't have them. Backfill sensible
+  // defaults so restored data doesn't render as NaN in elevation mode.
+  function backfillHeights() {
+    const defRoomHeight = window.appState.settings.defaultRoomHeight;
+    window.appState.rooms.forEach((r) => { if (!r.height) r.height = defRoomHeight; });
+
+    function ensureTriple(item, fallback) {
+      const room = window.appState.rooms.find((r) => r.id === item.roomId);
+      if (item.heightFromFloor == null) item.heightFromFloor = fallback.heightFromFloor;
+      if (item.objectHeight == null) item.objectHeight = fallback.objectHeight;
+      window.recomputeTriple(item, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room ? room.height : defRoomHeight, null);
+    }
+    window.appState.furniture.forEach((f) => ensureTriple(f, { heightFromFloor: 0, objectHeight: 75 }));
+    window.appState.fixtures.forEach((f) => ensureTriple(f, { heightFromFloor: 0, objectHeight: 200 }));
+    window.appState.electricals.forEach((e) => ensureTriple(e, { heightFromFloor: 30, objectHeight: 10 }));
+  }
+
   window.restoreAutosave = function restoreAutosave() {
     let raw;
     try {
@@ -73,6 +92,7 @@
           if (layer) Object.assign(layer, saved);
         });
       }
+      backfillHeights();
       return true;
     } catch (e) {
       console.warn('Autosave restore failed:', e);
