@@ -1,0 +1,123 @@
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F5F0E8;--grid:#DDD5C0;
+  --bar-top:#2C2416;--bar-side:#3D3525;
+  --panel-bg:#FAF7F0;--panel-bd:#DDD5C0;
+  --text-dk:#2C2416;--text-md:#5C4A2A;--text-lt:#F5F0E8;
+  --accent:#4A7FA5;--sel:#C17F3B;--sticky:#FEF3C7;
+  --font:'Courier New',monospace;
+}
+html,body{height:100%}
+body{font-family:var(--font);background:#888;overflow:hidden}
+/* #app is the Vue mount point wrapping topbar/body/bottombar — it must carry
+   the flex-column-fill-viewport layout itself, since it sits between <body>
+   and those elements. */
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* ── TOP BAR ── */
+#topbar{height:44px;background:var(--bar-top);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;border-bottom:1px solid #1a150e}
+.logo{font-size:13px;font-weight:bold;color:var(--text-lt);letter-spacing:.05em;margin-right:6px;white-space:nowrap}
+.logo span{color:var(--sel)}
+.vd{width:1px;height:24px;background:#5a4a34;margin:0 4px}
+.mode-toggle{display:flex;background:#1a150e;border-radius:4px;overflow:hidden}
+.mbt{padding:4px 11px;font-size:11px;font-family:var(--font);color:#a08060;border:none;background:transparent;cursor:pointer}
+.mbt.active{background:var(--sel);color:#fff}
+.tbtn{padding:4px 8px;font-size:11px;font-family:var(--font);color:var(--text-lt);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:3px;cursor:pointer;white-space:nowrap}
+.tbtn.dim{color:#7a6040;border-color:rgba(255,255,255,.08)}
+.tbtn:disabled{opacity:.4;cursor:default}
+.sp{flex:1}
+.save-note{font-size:10px;color:#7a6040}
+
+/* ── BODY ── */
+#body{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT TOOLBAR ── */
+#toolbar{width:52px;background:var(--bar-side);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;flex-shrink:0;border-right:1px solid #2a1e10}
+.tgrp{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;padding:0 4px;position:relative}
+.tsep{width:32px;height:1px;background:#5a4a34;margin:3px 0}
+.tt{width:40px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;color:#b09070}
+.tt:hover{background:rgba(255,255,255,.08);color:var(--text-lt)}
+.tt.active{background:var(--sel);border-color:#e09040;color:#fff}
+.tt .ic{font-size:15px;line-height:1}
+.tt .lb{font-size:7.5px;letter-spacing:.02em}
+
+/* shape submenu */
+.spop{position:absolute;left:54px;top:0;background:#2C2416;border:1px solid #5a4a34;border-radius:4px;padding:4px;display:flex;flex-direction:column;gap:2px;z-index:200;box-shadow:3px 4px 10px rgba(0,0,0,.4);min-width:130px}
+.spop button{display:flex;align-items:center;gap:7px;padding:5px 9px;font-size:10px;font-family:var(--font);color:#d0b890;background:transparent;border:none;border-radius:3px;cursor:pointer;white-space:nowrap;text-align:left}
+.spop button:hover{background:rgba(255,255,255,.1);color:#fff}
+.spop .si{font-size:12px;width:16px;text-align:center}
+.spop .sep{height:1px;background:#5a4a34;margin:2px 0}
+.spop .cat{font-size:8px;color:#7a6040;padding:2px 8px;letter-spacing:.05em;text-transform:uppercase}
+
+/* ── CANVAS ── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--paper)}
+.ruler-h{position:absolute;top:0;left:18px;right:0;height:18px;background:#EDE8DC;border-bottom:1px solid var(--grid);font-size:8px;color:var(--text-md);overflow:hidden;z-index:10;pointer-events:none}
+.ruler-v{position:absolute;top:18px;left:0;bottom:0;width:18px;background:#EDE8DC;border-right:1px solid var(--grid);font-size:8px;color:var(--text-md);overflow:hidden;z-index:10;pointer-events:none}
+#konva-container{position:absolute;top:18px;left:18px;right:0;bottom:0}
+
+/* Zoom — bottom-right corner */
+#zoom-ctrl{position:absolute;bottom:16px;right:12px;display:flex;flex-direction:column;gap:2px;z-index:5}
+.zb{width:26px;height:26px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-dk);cursor:pointer;user-select:none}
+#zl{width:26px;height:18px;background:rgba(245,240,232,.92);border:1px solid var(--grid);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-md)}
+
+/* Minimap — top-right corner (below the horizontal ruler) */
+#minimap{position:absolute;top:26px;right:12px;width:180px;height:130px;background:rgba(245,240,232,.94);border:1px solid var(--grid);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:5;overflow:hidden}
+#minimap-canvas{display:block;cursor:pointer}
+
+/* ── RIGHT PANEL ── */
+#panel{width:224px;background:var(--panel-bg);border-left:1px solid var(--panel-bd);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.ps{border-bottom:1px solid var(--panel-bd);padding:8px 10px}
+.pt{font-size:9px;font-weight:bold;color:var(--text-md);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.f{margin-bottom:5px}
+.f label{display:block;font-size:9px;color:var(--text-md);margin-bottom:2px;letter-spacing:.03em}
+.f input,.f select{width:100%;padding:3px 6px;font-size:11px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px}
+.fr{display:flex;gap:5px}.fr .f{flex:1}
+.csw{width:100%;height:22px;border:1px solid var(--panel-bd);border-radius:2px;display:flex;align-items:center;padding:0 6px;gap:5px;font-size:10px;color:var(--text-md);cursor:pointer}
+.cd{width:12px;height:12px;border-radius:2px;border:1px solid #aaa}
+
+/* Rotation */
+.rr{display:flex;align-items:center;gap:4px}
+.rr input{flex:1;padding:3px 5px;font-size:11px;border:1px solid var(--panel-bd);border-radius:2px;font-family:var(--font)}
+.rb{padding:3px 7px;font-size:11px;background:#EDE8DC;border:1px solid var(--panel-bd);border-radius:2px;cursor:pointer}
+
+/* Layers */
+.lr{display:flex;align-items:center;gap:5px;padding:4px 4px;border-radius:3px;cursor:pointer;font-size:10px;color:var(--text-dk)}
+.lr:hover{background:rgba(0,0,0,.04)}
+.lr.act{background:rgba(193,127,59,.1)}
+.lv,.ll{font-size:12px;cursor:pointer;color:#ccc;flex-shrink:0}
+.lv.on{color:var(--text-dk)}.ll.on{color:var(--accent)}
+.ln{flex:1}
+
+/* Room list */
+.ri{display:flex;align-items:center;gap:5px;padding:4px 4px;border-radius:3px;cursor:pointer;font-size:10px;color:var(--text-dk)}
+.ri:hover{background:rgba(0,0,0,.04)}
+.ri.act{background:rgba(193,127,59,.12);color:var(--sel)}
+.rdot{width:9px;height:9px;border-radius:2px;flex-shrink:0;border:1px solid #888}
+
+/* Buttons */
+.pa{width:100%;padding:5px;font-size:10px;font-family:var(--font);border:none;border-radius:3px;cursor:pointer;margin-bottom:3px}
+.pa.pr{background:var(--bar-top);color:var(--text-lt)}
+.pa.sc{background:transparent;color:var(--text-dk);border:1px solid var(--panel-bd)}
+.pa.ac{background:var(--accent);color:#fff}
+.pa.dn{background:#8B3A3A;color:#fff}
+.pa:disabled{opacity:.4;cursor:default}
+
+/* ── BOTTOM BAR ── */
+#bb{height:21px;background:var(--bar-top);display:flex;align-items:center;padding:0 10px;gap:12px;flex-shrink:0;border-top:1px solid #1a150e}
+#bb span{font-size:9px;color:#7a6040;font-family:var(--font);letter-spacing:.03em}
+#bb .co{color:#a08060}
+
+/* ── MODAL OVERLAY ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:999}
+.modal{background:var(--panel-bg);border:1px solid var(--panel-bd);border-radius:6px;font-family:var(--font);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.mh{background:var(--bar-top);color:var(--text-lt);padding:10px 14px;font-size:12px;font-weight:bold;border-radius:5px 5px 0 0;display:flex;justify-content:space-between;align-items:center}
+.mh span{cursor:pointer;opacity:.5}
+.mb{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.ms{font-size:9px;font-weight:bold;color:var(--text-md);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.mhr{border:none;border-top:1px solid var(--panel-bd)}
+.tog{width:36px;height:18px;border-radius:9px;position:relative;cursor:pointer;flex-shrink:0}
+.tog.on{background:var(--accent)}
+.tog.off{background:#ccc}
+.tog .k{position:absolute;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .1s}
+.tog.on .k{left:20px}
+.tog.off .k{left:2px}
