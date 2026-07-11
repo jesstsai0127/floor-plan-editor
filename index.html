@@ -14,8 +14,8 @@
     <div class="vd"></div>
 
     <div class="mode-toggle">
-      <button class="mbt active">{{ t('mode.floorplan') }}</button>
-      <button class="mbt" disabled title="Coming in a later phase">{{ t('mode.elevation') }}</button>
+      <button class="mbt" :class="{active: appState.ui.mode === 'floorplan'}" @click="setMode('floorplan')">{{ t('mode.floorplan') }}</button>
+      <button class="mbt" :class="{active: appState.ui.mode === 'elevation'}" :disabled="!appState.rooms.length" :title="appState.rooms.length ? '' : t('mode.needRoom')" @click="setMode('elevation')">{{ t('mode.elevation') }}</button>
     </div>
     <div class="vd"></div>
 
@@ -108,9 +108,21 @@
 
     <!-- ── CANVAS ── -->
     <div id="canvas-wrap">
-      <div class="ruler-h"></div>
-      <div class="ruler-v"></div>
+      <div class="ruler-h" v-if="appState.ui.mode === 'floorplan'"></div>
+      <div class="ruler-v" v-if="appState.ui.mode === 'floorplan'"></div>
       <div id="konva-container" v-once></div>
+
+      <!-- elevation mode: room selector + dynamic view tabs (this room's
+           actual walls, not a fixed Front/Back/Left/Right — see plan) -->
+      <div id="elevation-bar" v-if="appState.ui.mode === 'elevation'">
+        <select id="elevation-room-select" :value="appState.ui.currentRoomId" @change="selectElevationRoom($event.target.value)">
+          <option v-for="room in appState.rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
+        </select>
+        <div class="etabs">
+          <button v-for="v in elevationViews" :key="v.id" class="etab" :class="{active: appState.ui.currentElevation === v.id}" @click="selectElevationView(v.id)">{{ v.label }}</button>
+        </div>
+      </div>
+
       <div id="zoom-ctrl">
         <div class="zb" @click="zoomStep(1)">＋</div>
         <div id="zl">{{ Math.round(appState.ui.zoomFactor * 100) }}%</div>
@@ -129,6 +141,7 @@
             <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" v-model.number="selectedRoom.w"></div>
             <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="20" v-model.number="selectedRoom.h"></div>
           </div>
+          <div class="f"><label>{{ t('panel.height') }}</label><input type="number" min="100" v-model.number="selectedRoom.height"></div>
           <div class="f"><label>{{ t('panel.fillColor') }}</label>
             <div class="csw" :style="{background: selectedRoom.color}"><div class="cd" :style="{background: selectedRoom.color}"></div>{{ selectedRoom.color }}</div>
           </div>
@@ -172,6 +185,25 @@
             <button class="rb" @click="rotate90">↻ 90°</button>
           </div>
         </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.verticalDimensions') }}</div>
+          <div class="fr">
+            <div class="f"><label>{{ t('fixtures.heightFromFloor') }}</label><input type="number" min="0" :value="selectedFurnitureItem.heightFromFloor" @change="editVerticalField('heightFromFloor', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('fixtures.objectHeight') }}</label><input type="number" min="0" :value="selectedFurnitureItem.objectHeight" @change="editVerticalField('objectHeight', $event.target.valueAsNumber)"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.distanceFromCeiling') }}</label><input type="number" min="0" :value="selectedFurnitureItem.distanceFromCeiling" @change="editVerticalField('distanceFromCeiling', $event.target.valueAsNumber)"></div>
+        </div>
+
+        <div class="ps" v-if="horizontalInfo">
+          <div class="pt">{{ t('panel.horizontalDimensions') }}</div>
+          <div class="fr">
+            <div class="f"><label>{{ t('panel.fromLeft') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.u0)" @change="editHorizontalField('left', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('panel.fromRight') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.wallLen - horizontalInfo.u1)" @change="editHorizontalField('right', $event.target.valueAsNumber)"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="1" :disabled="!horizontalInfo.widthEditable" :value="Math.round(horizontalInfo.u1 - horizontalInfo.u0)" @change="editHorizontalField('width', $event.target.valueAsNumber)"></div>
+          <div v-if="!horizontalInfo.widthEditable" style="font-size:8px;color:#aaa;margin-top:2px">{{ t('panel.rotatedHint') }}</div>
+        </div>
       </template>
 
       <template v-else-if="selectedFixture">
@@ -189,10 +221,24 @@
         <div class="ps">
           <div class="pt">{{ t('fixtures.wallPosition') }}</div>
           <div class="f"><label>{{ t('fixtures.posOnWall') }}</label><input type="number" min="0" :value="selectedFixture.posOnWall" @change="window.setFixturePosOnWall(selectedFixture.id, $event.target.valueAsNumber)"></div>
+        </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.verticalDimensions') }}</div>
           <div class="fr">
-            <div class="f"><label>{{ t('fixtures.heightFromFloor') }}</label><input type="number" min="0" v-model.number="selectedFixture.heightFromFloor"></div>
-            <div class="f"><label>{{ t('fixtures.objectHeight') }}</label><input type="number" min="1" v-model.number="selectedFixture.objectHeight"></div>
+            <div class="f"><label>{{ t('fixtures.heightFromFloor') }}</label><input type="number" min="0" :value="selectedFixture.heightFromFloor" @change="editVerticalField('heightFromFloor', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('fixtures.objectHeight') }}</label><input type="number" min="1" :value="selectedFixture.objectHeight" @change="editVerticalField('objectHeight', $event.target.valueAsNumber)"></div>
           </div>
+          <div class="f"><label>{{ t('panel.distanceFromCeiling') }}</label><input type="number" min="0" :value="selectedFixture.distanceFromCeiling" @change="editVerticalField('distanceFromCeiling', $event.target.valueAsNumber)"></div>
+        </div>
+
+        <div class="ps" v-if="horizontalInfo">
+          <div class="pt">{{ t('panel.horizontalDimensions') }}</div>
+          <div class="fr">
+            <div class="f"><label>{{ t('panel.fromLeft') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.u0)" @change="editHorizontalField('left', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('panel.fromRight') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.wallLen - horizontalInfo.u1)" @change="editHorizontalField('right', $event.target.valueAsNumber)"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" :value="Math.round(horizontalInfo.u1 - horizontalInfo.u0)" @change="editHorizontalField('width', $event.target.valueAsNumber)"></div>
         </div>
       </template>
 
@@ -207,7 +253,24 @@
             <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedElectrical.x"></div>
             <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedElectrical.y"></div>
           </div>
-          <div class="f"><label>{{ t('electricals.fromFloor') }} (cm)</label><input type="number" min="0" v-model.number="selectedElectrical.heightFromFloor"></div>
+        </div>
+
+        <div class="ps">
+          <div class="pt">{{ t('panel.verticalDimensions') }}</div>
+          <div class="fr">
+            <div class="f"><label>{{ t('fixtures.heightFromFloor') }}</label><input type="number" min="0" :value="selectedElectrical.heightFromFloor" @change="editVerticalField('heightFromFloor', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('fixtures.objectHeight') }}</label><input type="number" min="1" :value="selectedElectrical.objectHeight" @change="editVerticalField('objectHeight', $event.target.valueAsNumber)"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.distanceFromCeiling') }}</label><input type="number" min="0" :value="selectedElectrical.distanceFromCeiling" @change="editVerticalField('distanceFromCeiling', $event.target.valueAsNumber)"></div>
+        </div>
+
+        <div class="ps" v-if="horizontalInfo">
+          <div class="pt">{{ t('panel.horizontalDimensions') }}</div>
+          <div class="fr">
+            <div class="f"><label>{{ t('panel.fromLeft') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.u0)" @change="editHorizontalField('left', $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('panel.fromRight') }}</label><input type="number" min="0" :value="Math.round(horizontalInfo.wallLen - horizontalInfo.u1)" @change="editHorizontalField('right', $event.target.valueAsNumber)"></div>
+          </div>
+          <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="1" :disabled="!horizontalInfo.widthEditable" :value="Math.round(horizontalInfo.u1 - horizontalInfo.u0)" @change="editHorizontalField('width', $event.target.valueAsNumber)"></div>
         </div>
       </template>
 
@@ -297,7 +360,7 @@
 
       <div class="ps" v-if="selectedRoom || selectedFurnitureItem || selectedFixture || selectedElectrical">
         <div class="pt">{{ t('actions.title') }}</div>
-        <button class="pa ac" disabled title="Coming in a later phase">↕ {{ t('actions.elevationView') }}</button>
+        <button class="pa ac" @click="jumpToElevation">↕ {{ t('actions.elevationView') }}</button>
         <button class="pa sc" v-if="!selectedFixture" @click="duplicateSelected">⧉ {{ t('actions.duplicate') }}</button>
         <button class="pa dn" @click="deleteSelected">✕ {{ t('actions.delete') }}</button>
       </div>
@@ -371,6 +434,7 @@
 <script src="locales/zh-TW.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/state.js"></script>
+<script src="js/dimensions.js"></script>
 <script src="js/storage.js"></script>
 <script>
 // Restore before canvas.js runs, so its initial grid draw uses the restored
@@ -484,6 +548,94 @@ Vue.createApp({
       window.setZoom(window.stage.scaleX() * (direction > 0 ? 1.2 : 1 / 1.2));
     }
 
+    // ── Phase 4: elevation mode ──────────────────────────────────────────
+    const currentElevationRoom = Vue.computed(() =>
+      window.appState.rooms.find((r) => r.id === window.appState.ui.currentRoomId) || null
+    );
+    const elevationViews = Vue.computed(() =>
+      window.appState.ui.mode === 'elevation' && window.elevationViewsFor ? window.elevationViewsFor(currentElevationRoom.value) : []
+    );
+
+    // whichever single selected item has vertical/horizontal dimension fields
+    // (rooms don't have these — they define the container, not an item in it)
+    const dimensionTarget = Vue.computed(() => {
+      if (selectedFurnitureItem.value) return { item: selectedFurnitureItem.value, kind: 'furn' };
+      if (selectedFixture.value) return { item: selectedFixture.value, kind: 'fix' };
+      if (selectedElectrical.value) return { item: selectedElectrical.value, kind: 'sock' };
+      return null;
+    });
+
+    // vertical (heightFromFloor/objectHeight/distanceFromCeiling) — view-
+    // independent physical properties, editable in both modes
+    function editVerticalField(key, value) {
+      if (!dimensionTarget.value) return;
+      const item = dimensionTarget.value.item;
+      const room = window.appState.rooms.find((r) => r.id === item.roomId);
+      if (!room) return;
+      item[key] = Math.max(0, Math.round(value));
+      window.recomputeTriple(item, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, key);
+    }
+
+    // horizontal (from-left/from-right/width along the wall being viewed) —
+    // only meaningful in elevation mode, since which axis is "horizontal"
+    // depends on which wall is currently being looked at
+    const horizontalInfo = Vue.computed(() => {
+      if (window.appState.ui.mode !== 'elevation' || !dimensionTarget.value || !window.elevationHorizontalInfo) return null;
+      return window.elevationHorizontalInfo(dimensionTarget.value.item, dimensionTarget.value.kind);
+    });
+
+    function editHorizontalField(field, value) {
+      if (!dimensionTarget.value || !horizontalInfo.value) return;
+      const { item, kind } = dimensionTarget.value;
+      const info = horizontalInfo.value;
+      const width = info.u1 - info.u0;
+      let newU0 = info.u0;
+      if (field === 'left') newU0 = value;
+      else if (field === 'right') newU0 = info.wallLen - value - width;
+
+      if (kind === 'fix') {
+        if (field === 'width') { item.width = Math.max(1, Math.round(value)); return; }
+        window.setFixturePosOnWall(item.id, Math.round(newU0));
+        return;
+      }
+      if (field === 'width') {
+        if (!info.widthEditable) return;
+        item.w = Math.max(1, Math.round(value));
+        return;
+      }
+      // translate along the wall's own direction vector: shifts u without
+      // touching the item's perpendicular depth, regardless of wall angle
+      const deltaU = newU0 - info.u0;
+      item.x = Math.round(item.x + deltaU * info.ux);
+      item.y = Math.round(item.y + deltaU * info.uy);
+    }
+
+    function setMode(mode) {
+      if (mode === 'elevation') {
+        if (!window.appState.rooms.length) return;
+        window.enterElevationMode();
+      } else {
+        window.appState.ui.mode = 'floorplan';
+        window.appState.ui.selectedIds = [];
+      }
+    }
+
+    function selectElevationRoom(roomId) {
+      window.enterElevationMode(roomId);
+    }
+    function selectElevationView(viewId) {
+      window.enterElevationMode(window.appState.ui.currentRoomId, viewId);
+    }
+
+    // "↕ Elevation View" quick-jump from the floor-plan selection panel
+    function jumpToElevation() {
+      if (selectedRoom.value) { window.enterElevationMode(selectedRoom.value.id); return; }
+      if (!dimensionTarget.value) return;
+      const { item, kind } = dimensionTarget.value;
+      window.enterElevationMode(item.roomId, kind === 'fix' ? item.wallId : undefined);
+      window.appState.ui.selectedIds = [item.id];
+    }
+
     return {
       appState: window.appState,
       t: window.t,
@@ -509,6 +661,15 @@ Vue.createApp({
       rotate90,
       alignSelected: (edge) => window.alignSelected(edge),
       zoomStep,
+      elevationViews,
+      selectElevationRoom,
+      selectElevationView,
+      dimensionTarget,
+      editVerticalField,
+      horizontalInfo,
+      editHorizontalField,
+      setMode,
+      jumpToElevation,
     };
   },
 }).mount('#app');
@@ -521,6 +682,7 @@ Vue.createApp({
 <script src="js/furniture.js"></script>
 <script src="js/fixtures.js"></script>
 <script src="js/electricals.js"></script>
+<script src="js/elevation.js"></script>
 <script src="js/minimap.js"></script>
 </body>
 </html>
