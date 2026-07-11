@@ -36,10 +36,22 @@
 
   function draw() {
     const rooms = window.appState.rooms;
-    const vp = viewportWorld();
+    const mode = window.appState.ui.mode;
+    // In elevation mode window.stage is a completely different coordinate
+    // frame (wall-local u/height, or room-relative x/y) — it doesn't
+    // correspond to a floor-plan viewport at all, so don't fold it into the
+    // represented bounds or draw it as a rectangle; just fit all rooms.
+    const vp = mode === 'floorplan' ? viewportWorld() : null;
 
+    let x0, y0, x1, y1;
+    if (vp) {
+      x0 = vp.x0; y0 = vp.y0; x1 = vp.x1; y1 = vp.y1;
+    } else if (rooms.length) {
+      x0 = Infinity; y0 = Infinity; x1 = -Infinity; y1 = -Infinity;
+    } else {
+      x0 = 0; y0 = 0; x1 = 1; y1 = 1;
+    }
     // union of content bounds + viewport (all in world px)
-    let x0 = vp.x0, y0 = vp.y0, x1 = vp.x1, y1 = vp.y1;
     rooms.forEach((r) => {
       x0 = Math.min(x0, cmToPx(r.x));
       y0 = Math.min(y0, cmToPx(r.y));
@@ -76,14 +88,63 @@
       ctx.strokeRect(rx, ry, rw, rh);
     });
 
-    // viewport rectangle
-    const vx = wx(vp.x0), vy = wy(vp.y0);
-    const vw = (vp.x1 - vp.x0) * scale, vh = (vp.y1 - vp.y0) * scale;
-    ctx.fillStyle = 'rgba(193,127,59,0.12)';
-    ctx.fillRect(vx, vy, vw, vh);
+    if (mode === 'floorplan') {
+      // viewport rectangle
+      const vx = wx(vp.x0), vy = wy(vp.y0);
+      const vw = (vp.x1 - vp.x0) * scale, vh = (vp.y1 - vp.y0) * scale;
+      ctx.fillStyle = 'rgba(193,127,59,0.12)';
+      ctx.fillRect(vx, vy, vw, vh);
+      ctx.strokeStyle = '#C17F3B';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(vx, vy, vw, vh);
+    } else {
+      drawElevationOverlay(wx, wy, scale);
+    }
+  }
+
+  // Elevation mode: keep the SAME minimap (all rooms in their real relative
+  // positions) rather than swapping in an isolated diagram — per architectural
+  // drawing convention (an "elevation marker": an arrow on the floor plan
+  // itself pointing at the wall being elevated), so the user can still see
+  // which neighbouring room lies beyond that wall. Current room highlighted;
+  // a wall view additionally gets an arrow at the wall's midpoint pointing
+  // inward. Ceiling/Floor have no single wall to point at, so just the room
+  // highlight, per the shape of the view (whole-room top-down).
+  function drawElevationOverlay(wx, wy, scale) {
+    const room = window.appState.rooms.find((r) => r.id === window.appState.ui.currentRoomId);
+    if (!room) return;
+    const rx = wx(cmToPx(room.x)), ry = wy(cmToPx(room.y));
+    const rw = cmToPx(room.w) * scale, rh = cmToPx(room.h) * scale;
+    ctx.fillStyle = 'rgba(193,127,59,0.28)';
+    ctx.fillRect(rx, ry, rw, rh);
     ctx.strokeStyle = '#C17F3B';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(vx, vy, vw, vh);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rx, ry, rw, rh);
+
+    const view = window.appState.ui.currentElevation;
+    if (!view || view === 'ceiling' || view === 'floor') return;
+    if (!window.roomWallsFor || !window.inwardNormalFor) return;
+    const wall = window.roomWallsFor(room).find((w) => w.id === view);
+    if (!wall) return;
+    const inward = window.inwardNormalFor(wall, room);
+    const midX = wx(cmToPx((wall.x1 + wall.x2) / 2)), midY = wy(cmToPx((wall.y1 + wall.y2) / 2));
+    const baseX = midX - inward.x * 3, baseY = midY - inward.y * 3;
+    const tipX = midX + inward.x * 13, tipY = midY + inward.y * 13;
+    ctx.strokeStyle = '#C17F3B';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY);
+    ctx.lineTo(tipX, tipY);
+    ctx.stroke();
+    const angle = Math.atan2(inward.y, inward.x);
+    const headLen = 5.5;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - headLen * Math.cos(angle - Math.PI / 6), tipY - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tipX - headLen * Math.cos(angle + Math.PI / 6), tipY - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = '#C17F3B';
+    ctx.fill();
   }
   window.redrawMinimap = draw;
 
@@ -107,9 +168,15 @@
   });
   window.addEventListener('mouseup', () => { dragging = false; });
 
-  // redraw when rooms change (pan/zoom redraws come via canvas.js redrawAll)
+  // redraw when rooms change (pan/zoom redraws come via canvas.js redrawAll),
+  // or when the elevation-mode overlay's own inputs change
   Vue.watch(
-    () => window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.color}`).join(','),
+    () => [
+      window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.color}`).join(','),
+      window.appState.ui.mode,
+      window.appState.ui.currentRoomId,
+      window.appState.ui.currentElevation,
+    ],
     draw,
     { immediate: true }
   );
