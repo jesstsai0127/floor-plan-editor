@@ -128,3 +128,10 @@ body{font-family:var(--font);background:#888;overflow:hidden}
 .tog .k{position:absolute;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .1s}
 .tog.on .k{left:20px}
 .tog.off .k{left:2px}
+
+/* ── AI EXPORT MODAL ── */
+.aix-rooms{display:flex;flex-wrap:wrap;gap:8px;padding:6px 0}
+.aix-rooms label{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-dk);cursor:pointer}
+.aix-ta{width:100%;padding:6px 8px;font-size:10px;font-family:var(--font);color:var(--text-dk);background:#fff;border:1px solid var(--panel-bd);border-radius:2px;resize:vertical;line-height:1.5}
+.aix-png{max-width:100%;border:1px solid var(--panel-bd);border-radius:3px;display:block}
+.aix-hint{font-size:9px;color:var(--text-md);line-height:1.5}
