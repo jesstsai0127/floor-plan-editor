@@ -29,7 +29,7 @@ window.appState = Vue.reactive({
 
   ui: {
     mode: 'floorplan', // 'floorplan' | 'elevation'
-    activeTool: 'select', // 'select' | 'room-rect' | 'room-triangle' | 'furn-*' | 'fixture-*' | 'socket'
+    activeTool: 'select', // 'select' | 'room-rect' | 'furn-*' | 'fixture-*' | 'socket'
     currentRoomId: null,
     currentElevation: 'front',
     selectedIds: [], // ids of selected rooms/furniture/fixtures/electricals, prefixed 'room-'/'furn-'/'fix-'/'sock-'
