@@ -37,6 +37,12 @@ window.appState = Vue.reactive({
     zoomFactor: 1, // 1 = 100%
     pointerX: 0, // cm — live cursor position over the canvas, written by canvas.js
     pointerY: 0,
+    aiExportOpen: false, // AI Export modal visibility
+    aiExportRoomIds: [], // room ids selected for AI export (multi-select)
+    aiExportStylePreset: 'Modern Minimalist', // 'Industrial' | 'Scandinavian' | 'Modern Minimalist' | 'Custom'
+    aiExportCustomStyle: '', // free-text style, used when aiExportStylePreset === 'Custom'
+    aiExportViewRoomId: null, // which room's individual tab is showing when 2+ rooms selected (null = Combined)
+    aiExportTab: 'png', // 'png' | 'prompt' | 'json' | 'negative'
   },
 });
 
