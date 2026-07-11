@@ -10,6 +10,7 @@
   const pxToCm = (px) => px / window.BASE_SCALE;
   const SIZE_CM = 12; // fixed footprint for placement/containment purposes
   const DEFAULT_HEIGHT_CM = 30; // typical wall outlet height
+  const DEFAULT_OBJECT_HEIGHT_CM = 10; // outlet plate thickness, for the vertical dimension triple
 
   function overlapArea(boxCm, room) {
     const ox = Math.max(0, Math.min(boxCm.x + boxCm.w, room.x + room.w) - Math.max(boxCm.x, room.x));
@@ -67,6 +68,16 @@
       },
     });
   }
+  // exposed so elevation.js's Floor/Ceiling views can draw the exact same
+  // outlet glyph, at a room-relative offset instead of world coordinates
+  window.buildElectricalVisual = function buildElectricalVisual(item, offXCm, offYCm) {
+    offXCm = offXCm || 0; offYCm = offYCm || 0;
+    const group = new Konva.Group({ x: cmToPx(item.x - offXCm), y: cmToPx(item.y - offYCm) });
+    const shape = makeShapeNode(item);
+    if (UI().selectedIds.includes(item.id)) { shape.stroke('#C17F3B'); shape.strokeWidth(2.2); }
+    group.add(shape);
+    return group;
+  };
 
   const groupById = {};
 
@@ -159,14 +170,17 @@
     if (!isFullyInRooms(candidate)) return null;
     const room = primaryRoomFor(candidate);
     const id = window.appState.createElectricalId();
-    window.appState.electricals.push({
+    const item = {
       id,
       name: window.t('electricals.socket') + ' ' + (window.appState.electricals.length + 1),
       type: 'socket',
       roomId: room.id,
       x: candidate.x, y: candidate.y, w: SIZE_CM, h: SIZE_CM,
       heightFromFloor: DEFAULT_HEIGHT_CM,
-    });
+      objectHeight: DEFAULT_OBJECT_HEIGHT_CM,
+    };
+    window.recomputeTriple(item, 'heightOrder', ['heightFromFloor', 'objectHeight', 'distanceFromCeiling'], room.height, null);
+    window.appState.electricals.push(item);
     UI().selectedIds = [id];
     UI().activeTool = 'select';
     return id;
