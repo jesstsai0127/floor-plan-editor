@@ -423,7 +423,7 @@
 
   <!-- AI Export modal (Phase 5): produces material for an external image
        model (Gemini/Imagen) — no API call happens here, just a 6-grid PNG
-       and three copy-paste text formats. See ai-export.js. -->
+       and two copy-paste text formats. See ai-export.js. -->
   <div class="overlay" v-if="appState.ui.aiExportOpen" @click.self="closeAiExport">
     <div class="modal" style="width:560px;max-height:88vh;display:flex;flex-direction:column">
       <div class="mh">🤖 {{ t('aiExport.title') }} <span @click="closeAiExport">✕</span></div>
