@@ -21,6 +21,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'topbar.undo': 'TRANSLATE_ME: Undo',
   'topbar.redo': 'TRANSLATE_ME: Redo',
   'topbar.clear': 'TRANSLATE_ME: Clear canvas',
+  'topbar.clearConfirm': 'TRANSLATE_ME: Clear the whole canvas? You can undo this afterward.',
   'topbar.aiExport': 'TRANSLATE_ME: AI Export',
   'topbar.export': 'TRANSLATE_ME: Export',
   'topbar.autosaved': 'TRANSLATE_ME: Auto-saved',
