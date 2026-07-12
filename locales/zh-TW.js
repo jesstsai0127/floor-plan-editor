@@ -14,6 +14,7 @@ window.LOCALES['zh-TW'] = {
   'topbar.undo': '復原',
   'topbar.redo': '重做',
   'topbar.clear': '清空畫布',
+  'topbar.clearConfirm': '確定要清空整個畫布嗎？之後可以用復原救回來。',
   'topbar.aiExport': 'AI 匯出',
   'topbar.export': '匯出',
   'topbar.autosaved': '已自動儲存',
