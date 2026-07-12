@@ -123,6 +123,7 @@
         <div class="zb" @click="zoomStep(1)">＋</div>
         <div id="zl">{{ Math.round(appState.ui.zoomFactor * 100) }}%</div>
         <div class="zb" @click="zoomStep(-1)">－</div>
+        <div class="zb" @click="fitView" :title="t('zoom.fit')">⛶</div>
       </div>
       <div id="minimap" v-once><canvas id="minimap-canvas"></canvas></div>
     </div>
@@ -134,8 +135,8 @@
           <div class="pt">{{ t('panel.properties') }} — {{ selectedRoom.name }}</div>
           <div class="f"><label>{{ t('panel.name') }}</label><input v-model="selectedRoom.name"></div>
           <div class="fr">
-            <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" v-model.number="selectedRoom.w"></div>
-            <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="20" v-model.number="selectedRoom.h"></div>
+            <div class="f"><label>{{ t('panel.width') }}</label><input type="number" min="20" :value="selectedRoom.w" @change="window.setRoomW(selectedRoom.id, $event.target.valueAsNumber)"></div>
+            <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="20" :value="selectedRoom.h" @change="window.setRoomH(selectedRoom.id, $event.target.valueAsNumber)"></div>
           </div>
           <div class="f"><label>{{ t('panel.height') }}</label><input type="number" min="100" v-model.number="selectedRoom.height"></div>
           <div class="f"><label>{{ t('panel.fillColor') }}</label>
@@ -146,8 +147,8 @@
         <div class="ps">
           <div class="pt">{{ t('panel.position') }}</div>
           <div class="fr">
-            <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedRoom.x"></div>
-            <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedRoom.y"></div>
+            <div class="f"><label>X (cm)</label><input type="number" :value="selectedRoom.x" @change="window.setRoomX(selectedRoom.id, $event.target.valueAsNumber)"></div>
+            <div class="f"><label>Y (cm)</label><input type="number" :value="selectedRoom.y" @change="window.setRoomY(selectedRoom.id, $event.target.valueAsNumber)"></div>
           </div>
         </div>
       </template>
@@ -617,6 +618,10 @@ Vue.createApp({
     function zoomStep(direction) {
       window.setZoom(window.stage.scaleX() * (direction > 0 ? 1.2 : 1 / 1.2));
     }
+    function fitView() {
+      if (window.appState.ui.mode === 'elevation') { window.refitElevation(); return; }
+      window.fitToContent();
+    }
 
     // ── Phase 4: elevation mode ──────────────────────────────────────────
     const currentElevationRoom = Vue.computed(() =>
@@ -841,6 +846,7 @@ Vue.createApp({
       rotate90,
       alignSelected: (edge) => window.alignSelected(edge),
       zoomStep,
+      fitView,
       elevationViews,
       selectElevationRoom,
       selectElevationView,
