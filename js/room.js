@@ -283,6 +283,57 @@
     UI().activeTool = 'select';
   }
 
+  // Panel edits (X/Y/width/depth typed directly, not dragged) bypass the
+  // canvas drag/Transformer's snap-while-dragging engine entirely — typing an
+  // exact number just writes it, so an edge that used to line up with a
+  // neighbor can silently drift apart. These setters snap the edge the field
+  // actually controls (left/top/right/bottom) to the nearest OTHER room's
+  // edge within a small fixed threshold, on commit (blur/Enter), not on every
+  // keystroke. Fixed cm threshold rather than the drag-snap's screen-px-based
+  // one (interaction.js's worldThreshold()) — a typed value isn't tied to a
+  // pointer position or the current zoom level, so a zoom-independent
+  // tolerance is what a user actually expects here.
+  const PANEL_SNAP_THRESHOLD_CM = 5;
+  function nearestEdgeCm(cm, edgesCm) {
+    let best = cm, bestDiff = PANEL_SNAP_THRESHOLD_CM;
+    edgesCm.forEach((e) => {
+      const d = Math.abs(e - cm);
+      if (d < bestDiff) { bestDiff = d; best = e; }
+    });
+    return best;
+  }
+  function neighborEdgesCm(skipId, axis) {
+    const edges = [];
+    window.appState.rooms.forEach((r) => {
+      if (r.id === skipId) return;
+      if (axis === 'x') edges.push(r.x, r.x + r.w);
+      else edges.push(r.y, r.y + r.h);
+    });
+    return edges;
+  }
+  window.setRoomX = function setRoomX(id, val) {
+    const r = roomById(id);
+    if (!r || !Number.isFinite(val)) return;
+    r.x = Math.round(nearestEdgeCm(val, neighborEdgesCm(id, 'x')));
+  };
+  window.setRoomY = function setRoomY(id, val) {
+    const r = roomById(id);
+    if (!r || !Number.isFinite(val)) return;
+    r.y = Math.round(nearestEdgeCm(val, neighborEdgesCm(id, 'y')));
+  };
+  window.setRoomW = function setRoomW(id, val) {
+    const r = roomById(id);
+    if (!r || !Number.isFinite(val) || val < 20) return;
+    const snappedRight = nearestEdgeCm(r.x + val, neighborEdgesCm(id, 'x'));
+    r.w = Math.round(Math.max(20, snappedRight - r.x));
+  };
+  window.setRoomH = function setRoomH(id, val) {
+    const r = roomById(id);
+    if (!r || !Number.isFinite(val) || val < 20) return;
+    const snappedBottom = nearestEdgeCm(r.y + val, neighborEdgesCm(id, 'y'));
+    r.h = Math.round(Math.max(20, snappedBottom - r.y));
+  };
+
   window.deleteRoom = function deleteRoom(id) {
     const idx = window.appState.rooms.findIndex((r) => r.id === id);
     if (idx >= 0) window.appState.rooms.splice(idx, 1);
