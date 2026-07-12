@@ -114,7 +114,7 @@
         <select id="elevation-room-select" :value="appState.ui.currentRoomId" @change="selectElevationRoom($event.target.value)">
           <option v-for="room in appState.rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
         </select>
-        <div class="etabs">
+        <div class="etabs" :title="t('elevation.viewHint')">
           <button v-for="v in elevationViews" :key="v.id" class="etab" :class="{active: appState.ui.currentElevation === v.id}" @click="selectElevationView(v.id)">{{ v.label }}</button>
         </div>
       </div>
@@ -456,7 +456,7 @@
         <template v-if="appState.ui.aiExportRoomIds.length > 1">
           <div class="ms">{{ t('aiExport.view') }}</div>
           <div class="etabs" style="flex-wrap:wrap">
-            <button class="etab" :class="{active: !appState.ui.aiExportViewRoomId}" @click="selectAiExportView(null)">{{ t('aiExport.combined') }}</button>
+            <button class="etab etab-combined" :class="{active: !appState.ui.aiExportViewRoomId}" @click="selectAiExportView(null)">⊞ {{ t('aiExport.combined') }}</button>
             <button v-for="room in aiExportSelectedRooms" :key="room.id" class="etab" :class="{active: appState.ui.aiExportViewRoomId === room.id}" @click="selectAiExportView(room.id)">{{ room.name }}</button>
           </div>
         </template>
