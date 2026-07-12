@@ -119,6 +119,7 @@ window.LOCALES['en-US'] = {
   'fixtures.heightFromFloor': 'From floor (cm)',
   'fixtures.objectHeight': 'Object height (cm)',
   'fixtures.noWall': 'No wall nearby — drag closer to a room edge',
+  'fixtures.overlaps': 'Overlaps another opening on this wall',
 
   // electricals
   'electricals.title': 'Sockets',
@@ -138,6 +139,7 @@ window.LOCALES['en-US'] = {
   // elevation mode
   'mode.needRoom': 'Create a room first',
   'elevation.room': 'Room',
+  'elevation.viewHint': 'Each tab shows where you stand — "Top" means you’re standing at the top of the room looking toward the bottom wall.',
   'elevation.wallTop': 'Top',
   'elevation.wallRight': 'Right',
   'elevation.wallBottom': 'Bottom',
