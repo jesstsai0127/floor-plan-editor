@@ -42,7 +42,7 @@ window.appState = Vue.reactive({
     aiExportStylePreset: 'Modern Minimalist', // 'Industrial' | 'Scandinavian' | 'Modern Minimalist' | 'Custom'
     aiExportCustomStyle: '', // free-text style, used when aiExportStylePreset === 'Custom'
     aiExportViewRoomId: null, // which room's individual tab is showing when 2+ rooms selected (null = Combined)
-    aiExportTab: 'png', // 'png' | 'prompt' | 'json' | 'negative'
+    aiExportTab: 'png', // 'png' | 'prompt' | 'json'
   },
 });
 
