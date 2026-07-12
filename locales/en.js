@@ -12,6 +12,7 @@ window.LOCALES['en-US'] = {
   'topbar.aiExport': 'AI Export',
   'topbar.export': 'Export',
   'topbar.autosaved': 'Auto-saved',
+  'zoom.fit': 'Fit all rooms in view',
 
   // left toolbar
   'toolbar.select': 'Select',
