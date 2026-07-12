@@ -466,7 +466,6 @@
           <button class="etab" :class="{active: appState.ui.aiExportTab === 'png'}" @click="appState.ui.aiExportTab = 'png'">{{ t('aiExport.tabPng') }}</button>
           <button class="etab" :class="{active: appState.ui.aiExportTab === 'prompt'}" @click="appState.ui.aiExportTab = 'prompt'">{{ t('aiExport.tabPrompt') }}</button>
           <button class="etab" :class="{active: appState.ui.aiExportTab === 'json'}" @click="appState.ui.aiExportTab = 'json'">{{ t('aiExport.tabJson') }}</button>
-          <button class="etab" :class="{active: appState.ui.aiExportTab === 'negative'}" @click="appState.ui.aiExportTab = 'negative'">{{ t('aiExport.tabNegative') }}</button>
         </div>
 
         <div v-if="!appState.ui.aiExportRoomIds.length" class="aix-hint">{{ t('aiExport.noRooms') }}</div>
@@ -483,10 +482,6 @@
           <div v-else-if="appState.ui.aiExportTab === 'json'">
             <textarea class="aix-ta" readonly rows="9" :value="aiExportJsonText"></textarea>
             <button class="pa sc" @click="copyAiExportText(aiExportJsonText, 'json')">{{ aiExportCopiedTab === 'json' ? t('aiExport.copied') : t('aiExport.copy') }}</button>
-          </div>
-          <div v-else-if="appState.ui.aiExportTab === 'negative'">
-            <textarea class="aix-ta" readonly rows="4" :value="aiExportNegativeText"></textarea>
-            <button class="pa sc" @click="copyAiExportText(aiExportNegativeText, 'negative')">{{ aiExportCopiedTab === 'negative' ? t('aiExport.copied') : t('aiExport.copy') }}</button>
           </div>
         </template>
 
@@ -718,7 +713,6 @@ Vue.createApp({
     const aiExportPngUrl = Vue.ref('');
     const aiExportPromptText = Vue.ref('');
     const aiExportJsonText = Vue.ref('');
-    const aiExportNegativeText = Vue.ref('');
     const aiExportGenerating = Vue.ref(false);
     const aiExportCopiedTab = Vue.ref('');
 
@@ -726,7 +720,7 @@ Vue.createApp({
       const S = window.appState.ui;
       const selected = aiExportSelectedRooms.value;
       if (!selected.length) {
-        aiExportPngUrl.value = ''; aiExportPromptText.value = ''; aiExportJsonText.value = ''; aiExportNegativeText.value = '';
+        aiExportPngUrl.value = ''; aiExportPromptText.value = ''; aiExportJsonText.value = '';
         return;
       }
       aiExportGenerating.value = true;
@@ -742,7 +736,6 @@ Vue.createApp({
           aiExportPromptText.value = window.buildPromptText(room);
           aiExportJsonText.value = window.buildJsonPrompt(room);
         }
-        aiExportNegativeText.value = window.buildNegativePrompt();
       } finally {
         aiExportGenerating.value = false;
       }
@@ -818,7 +811,6 @@ Vue.createApp({
       aiExportPngUrl,
       aiExportPromptText,
       aiExportJsonText,
-      aiExportNegativeText,
       aiExportGenerating,
       aiExportCopiedTab,
       openAiExport,
