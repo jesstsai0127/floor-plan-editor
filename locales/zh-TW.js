@@ -1,5 +1,10 @@
 window.LOCALES = window.LOCALES || {};
 window.LOCALES['zh-TW'] = {
+  // Reserved key: this language's own native name, shown in the language
+  // dropdown regardless of which language is currently active. Not read by
+  // t() anywhere else. See locales/AGENTS.md if you're adding a new language.
+  '_langName': '繁體中文',
+
   // top bar
   'mode.floorplan': '平面圖',
   'mode.elevation': '立面圖',
@@ -88,8 +93,6 @@ window.LOCALES['zh-TW'] = {
   'settings.unitImperial': '英制 (in/ft)',
   'settings.wallThickness': '牆厚 (cm)',
   'settings.language': '語言',
-  'settings.langEnUS': 'English (en-US)',
-  'settings.langZhTW': '繁體中文 (zh-TW)',
   'settings.grid': '格線',
   'settings.showGrid': '顯示格線',
   'settings.gridSize': '格線間距 (cm)',
