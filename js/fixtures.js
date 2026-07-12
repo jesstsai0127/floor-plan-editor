@@ -79,17 +79,19 @@
   // of "distance from wall start", so both paths get the same clamping +
   // overlap validation (a door/window can jump to a different wall, same as
   // dragging it there; width never changes).
+  // returns 'ok' on success, or a reason string on failure ('no-wall' | 'overlap')
+  // so callers can show WHY the candidate spot was rejected, not just that it was
   function repositionFixture(f, xCm, yCm) {
     const nearest = nearestWall(xCm, yCm);
-    if (!nearest) return false;
+    if (!nearest) return 'no-wall';
     const len = wallLength(nearest.wall);
-    if (len < f.width) return false;
+    if (len < f.width) return 'no-wall';
     const pos = clampPosOnWall(len, f.width, nearest.proj.distAlong - f.width / 2);
-    if (overlapsExisting(nearest.room.id, nearest.wall.id, pos, f.width, f.id)) return false;
+    if (overlapsExisting(nearest.room.id, nearest.wall.id, pos, f.width, f.id)) return 'overlap';
     f.roomId = nearest.room.id;
     f.wallId = nearest.wall.id;
     f.posOnWall = Math.round(pos);
-    return true;
+    return 'ok';
   }
   // panel's "distance from wall start" field calls this directly — clamps to
   // the CURRENT wall's valid range and rejects overlaps, instead of accepting
@@ -101,7 +103,11 @@
     if (!wall) return;
     const len = wallLength(wall);
     const pos = clampPosOnWall(len, f.width, desiredPos);
-    if (overlapsExisting(f.roomId, f.wallId, pos, f.width, f.id)) return; // silently ignore — stay at last valid position
+    if (overlapsExisting(f.roomId, f.wallId, pos, f.width, f.id)) {
+      window.showTooltip(window.t('fixtures.overlaps'));
+      setTimeout(window.hideTooltip, 1000);
+      return; // stay at last valid position
+    }
     f.posOnWall = Math.round(pos);
   };
 
@@ -242,14 +248,16 @@
 
   const fixtureById = (id) => window.appState.fixtures.find((f) => f.id === id);
 
+  // returns the new fixture's id on success, or a reason string on failure
+  // ('no-wall' | 'overlap') so the caller can show an accurate message
   function commitFixture(px, py, type) {
     const nearest = nearestWall(px, py);
-    if (!nearest) return null; // no rooms exist yet
+    if (!nearest) return 'no-wall'; // no rooms exist yet
     const preset = PRESETS[type];
     const len = wallLength(nearest.wall);
-    if (len < preset.width) return null; // wall too short for this opening
+    if (len < preset.width) return 'no-wall'; // wall too short for this opening
     const pos = clampPosOnWall(len, preset.width, nearest.proj.distAlong - preset.width / 2);
-    if (overlapsExisting(nearest.room.id, nearest.wall.id, pos, preset.width, null)) return null;
+    if (overlapsExisting(nearest.room.id, nearest.wall.id, pos, preset.width, null)) return 'overlap';
 
     const id = window.appState.createFixtureId();
     const item = {
@@ -325,9 +333,11 @@
     const xCm = pxToCm(p.x), yCm = pxToCm(p.y);
 
     if (draggingFixtureId) {
-      window.hideTooltip();
       const f = fixtureById(draggingFixtureId);
-      if (f) repositionFixture(f, xCm, yCm); // no-op (stays put) if the candidate spot is invalid
+      const result = f ? repositionFixture(f, xCm, yCm) : 'ok'; // 'ok' = no-op if fixture vanished mid-drag
+      if (result === 'overlap') window.showTooltip(window.t('fixtures.overlaps'));
+      else if (result === 'no-wall') window.showTooltip(window.t('fixtures.noWall'));
+      else window.hideTooltip();
       return;
     }
 
@@ -345,6 +355,7 @@
   window.stage.on('mouseup touchend', () => {
     if (draggingFixtureId) {
       draggingFixtureId = null;
+      window.hideTooltip();
       window.suppressNextCanvasClick();
       return;
     }
@@ -354,12 +365,12 @@
     placingType = null;
     window.clearGuides();
     if (!p) return;
-    const id = commitFixture(pxToCm(p.x), pxToCm(p.y), type);
-    if (id) {
-      window.suppressNextCanvasClick();
-    } else {
-      window.showTooltip(window.t('fixtures.noWall'));
+    const result = commitFixture(pxToCm(p.x), pxToCm(p.y), type);
+    if (result === 'no-wall' || result === 'overlap') {
+      window.showTooltip(window.t(result === 'overlap' ? 'fixtures.overlaps' : 'fixtures.noWall'));
       setTimeout(window.hideTooltip, 1000);
+    } else {
+      window.suppressNextCanvasClick();
     }
   });
 
