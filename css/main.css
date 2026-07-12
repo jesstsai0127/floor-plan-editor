@@ -66,6 +66,7 @@ body{font-family:var(--font);background:#888;overflow:hidden}
 .etabs{display:flex;background:#1a150e;border-radius:4px;overflow:hidden}
 .etab{padding:4px 9px;font-size:10px;font-family:var(--font);color:#a08060;border:none;background:transparent;cursor:pointer;white-space:nowrap}
 .etab.active{background:var(--sel);color:#fff}
+.etab-combined{font-weight:bold;border-right:1px solid rgba(255,255,255,.12)}
 
 /* Minimap — top-right corner (below the horizontal ruler) */
 #minimap{position:absolute;top:26px;right:12px;width:180px;height:130px;background:rgba(245,240,232,.94);border:1px solid var(--grid);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:5;overflow:hidden}
