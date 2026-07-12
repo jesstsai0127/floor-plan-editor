@@ -1,5 +1,10 @@
 window.LOCALES = window.LOCALES || {};
 window.LOCALES['en-US'] = {
+  // Reserved key: this language's own native name, shown in the language
+  // dropdown regardless of which language is currently active. Not read by
+  // t() anywhere else. See locales/AGENTS.md if you're adding a new language.
+  '_langName': 'English',
+
   // top bar
   'mode.floorplan': 'Floor Plan',
   'mode.elevation': 'Elevation',
@@ -88,8 +93,6 @@ window.LOCALES['en-US'] = {
   'settings.unitImperial': 'Imperial (in/ft)',
   'settings.wallThickness': 'Wall thickness (cm)',
   'settings.language': 'Language',
-  'settings.langEnUS': 'English (en-US)',
-  'settings.langZhTW': '繁體中文 (zh-TW)',
   'settings.grid': 'Grid',
   'settings.showGrid': 'Show grid',
   'settings.gridSize': 'Grid size (cm)',
