@@ -432,6 +432,13 @@
   }
   window.renderElevation = render;
 
+  // manual re-fit (e.g. the canvas's "Fit" button) — forces the next render()
+  // to re-run its shouldFit camera logic even though room/view haven't changed
+  window.refitElevation = function refitElevation() {
+    lastFitKey = null;
+    render();
+  };
+
   Vue.watch(
     () => [
       UI().mode, UI().currentRoomId, UI().currentElevation, UI().zoomFactor, UI().selectedIds.join(','),
