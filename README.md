@@ -1,32 +1,166 @@
 # Floor Plan Editor
 
-輕量級 2D 室內平面與立面圖編輯器，附 AI 算圖素材生成。
+A lightweight, offline 2D floor-plan and elevation editor that also produces
+reference material (a PNG line-art sheet + text prompts) for handing to an
+external AI image generator such as Gemini/Imagen.
 
-## 特性
+No install, no build step, no server, no account. Download the folder,
+double-click `index.html`, and you're drawing.
 
-- 純前端 SPA，雙擊 `index.html` 即可在瀏覽器執行
-- 無需安裝任何工具，離線可用
-- 支援 Windows / macOS / Ubuntu
+[繁體中文版說明請見 README.zh-TW.md](README.zh-TW.md)
 
-## 使用方式
+## Highlights
 
-1. Clone 或下載此專案
-2. 雙擊 `index.html` 以瀏覽器開啟
-3. 開始繪製你的平面圖
+- Pure front-end single-page app — works fully offline, all libraries are
+  bundled locally in `vendor/`
+- Draw rooms, furniture, doors/windows, and electrical sockets on an
+  infinite, snapping, zoomable canvas
+- Six-view elevation mode (Top / Right / Bottom / Left / Ceiling / Floor)
+  generated automatically from your floor plan — no separate drawing needed
+- AI Export: a 2×3 grid PNG of clean line-art views plus ready-to-paste
+  text/JSON prompts, so you can hand your plan to an image model and get a
+  photorealistic render back
+- English and Traditional Chinese UI out of the box, more languages easy to
+  add (see the very bottom of this file)
 
-## 功能
+## Getting Started
 
-- 2D 平面圖繪製（房間、家具、門窗、插座、燈具）
-- 6 面立面圖（前/後/左/右/上/下）
-- 三選二高度/位置自動計算
-- AI 素材導出（提示詞 + 六宮格線稿 PNG）
-- 自動存檔（localStorage）
-- JSON 匯入/匯出、PNG/PDF 導出
+1. Download or `git clone` this repository.
+2. Open `index.html` in a modern browser (Chrome, Firefox, Safari, or Edge)
+   — either by double-clicking it, or by serving the folder with any static
+   file server if you prefer (e.g. `python3 -m http.server`).
+3. Start drawing.
 
-## 技術棧
+Your work saves itself automatically to the browser's local storage as you
+go (see **Autosave** below) — there's no explicit save step to remember.
 
-- [Konva.js](https://konvajs.org/) — 互動式 Canvas 引擎
-- [Vue 3](https://vuejs.org/) — UI 狀態管理
-- [html2canvas](https://html2canvas.hertzen.com/) + [jsPDF](https://github.com/parallax/jsPDF) — 導出
+## User Guide
 
-所有依賴皆為本地 `vendor/` 副本，無需網路。
+### Rooms
+
+Pick the **Room** tool in the left toolbar, then press, drag, and release on
+the canvas to draw a rectangular room. Edges snap to the grid and to other
+rooms as you draw. Select a room to edit its name, width/depth, fill color,
+and exact X/Y position/size in the right panel — typing a number there also
+snaps to nearby room edges within 5 cm.
+
+### Furniture, Lighting & Structural Items
+
+Open the **Furniture** submenu in the left toolbar for three groups:
+
+- **Furniture** — rectangle, circle, or triangle, for anything you want to
+  represent abstractly (sofas, tables, beds, ...)
+- **Structural** — beam
+- **Lighting** — ceiling light, floor lamp, table lamp
+
+Press, drag, and release inside a room to place an item at a sensible
+default size (unlike rooms, furniture isn't drawn to a custom size on
+placement — resize it afterward with the selection handles). An item must
+land fully inside a room, or fully inside the combined footprint of several
+adjacent rooms if it spans an opening between them; an invalid drop shows a
+brief message and reverts.
+
+Select an item to edit its name, size, fill color, position, and rotation
+(type an angle 0–359°, or use the **↻ 90°** quick-rotate button). A small
+arrow on the item always marks which way is "front."
+
+### Doors, Windows & Sockets
+
+The **Openings** tool places doors and windows: drag near any room's wall
+and it snaps onto that wall, showing a live crosshair as you drag. Once
+placed, fine-tune its position along the wall, its height off the floor,
+and its own height in the right panel. Two openings can't overlap on the
+same wall — an invalid position is rejected with a short message.
+
+The **Socket** tool places electrical outlets anywhere inside a room, with
+the same height fields as openings.
+
+### Selecting, Multi-Select & Alignment
+
+- **Select tool** — click an item to select it
+- **Shift/Ctrl+click** — add to the selection
+- **Drag on empty canvas** — rubber-band select everything inside the box
+- **Hold Space + drag** — pan the canvas
+- **Arrow keys** — nudge the current selection by 1 cm
+- **Delete / Backspace** — delete the current selection
+- With 2+ items selected, the right panel offers batch **Align**
+  (left/right/top/bottom/center-H/center-V) and **Delete all**
+
+### Elevation View
+
+Click **Elevation** in the top bar (enabled once you have at least one
+room) to switch from the floor plan to a wall-by-wall view. Pick a room,
+then a view tab — the tabs are named for where you're standing (e.g. the
+**Top** tab shows the wall you're facing when standing at the top of the
+room, looking down). **Ceiling** and **Floor** are the reflected-ceiling and
+plan views.
+
+Every item shown here has the same three height fields (from floor / object
+height / from ceiling) — edit any two and the third is calculated
+automatically from the room's ceiling height, no lock icon needed, it just
+tracks whichever two fields you touched most recently. Un-rotated items also
+get an editable horizontal position (from left / from right / width) that
+writes straight back to the floor plan; rotated items show this read-only,
+since their apparent width in this view isn't their stored width — go back
+to the floor plan to resize those.
+
+The minimap (top-right of the floor plan) highlights the current room and,
+for a wall view, draws an arrow on that wall showing which direction you're
+looking, using the same convention architects use for elevation markers on
+a real blueprint.
+
+### AI Export
+
+Click **AI Export** in the top bar (enabled once you have a room). Check
+one or more rooms, pick a style preset (Industrial / Scandinavian / Modern
+Minimalist) or type your own — a style description works best in English,
+since it's headed for an English-oriented image model. With multiple rooms
+selected you can flip between each room's own material and a **Combined**
+tab that merges all of them into one grid and one prompt.
+
+Each room (or the combined set) gives you:
+
+- **6-Grid PNG** — a white-background, black-line-only sheet of the six
+  elevation views, meant to be uploaded as a reference/sketch image
+- **Prompt** — one paste-ready English sentence describing the room, style,
+  and what to avoid
+- **JSON Prompt** — the same information as structured JSON, for models
+  that parse structured input better
+
+Suggested flow: download the PNG, upload it to your image model as a
+reference, paste the Prompt or JSON Prompt, generate.
+
+### Settings
+
+The gear icon opens Settings: measurement unit (metric now, imperial
+planned), default wall thickness, UI language, and grid visibility/spacing/
+color.
+
+### Autosave
+
+Every change is saved to the browser's local storage a moment after you
+make it — there's a **Save** button in the top bar too if you want to force
+it immediately, but you generally don't need to think about saving at all.
+This is per-browser, per-device storage: it doesn't sync across machines or
+survive clearing site data.
+
+## Not Yet Built
+
+Being upfront about what this version doesn't do yet: creating a new blank
+project or opening a saved file from disk, undo/redo, exporting a PNG/PDF
+of the finished plan, and sticky notes on the canvas. These have UI
+placeholders that are visibly disabled — nothing here is a hidden or broken
+feature, just not built yet.
+
+## Tech Stack
+
+- [Konva.js](https://konvajs.org/) — canvas rendering and interaction
+- [Vue 3](https://vuejs.org/) — UI state (Composition API, no build step,
+  loaded from a plain `<script>` tag)
+- All dependencies are vendored locally in `vendor/` — nothing is fetched
+  over the network at runtime
+
+## Contributing a Translation
+
+Adding a UI language is a small, self-contained task — see
+[`locales/AGENTS.md`](locales/AGENTS.md) for the exact procedure.
