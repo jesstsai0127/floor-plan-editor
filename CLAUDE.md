@@ -21,3 +21,4 @@ Warm Paper × SmartDraw 混合：米白底 `#F5F0E8`、棕色格線、深暖棕 
 ## 開發流程
 每個功能 Phase：Mockup → 使用者確認 → 實作 → 驗收
 UX/流程設計有需要時跑 `/antigravity-review`，程式碼 review 自行負責
+開發中發現可優化項目，記到 `lessons-learned.md`（格式見檔案內範本），不用等真的踩雷
