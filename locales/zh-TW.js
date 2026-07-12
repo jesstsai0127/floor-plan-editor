@@ -119,6 +119,7 @@ window.LOCALES['zh-TW'] = {
   'fixtures.heightFromFloor': '距地板 (cm)',
   'fixtures.objectHeight': '物件高度 (cm)',
   'fixtures.noWall': '附近沒有牆——拖曳靠近房間邊緣',
+  'fixtures.overlaps': '跟這面牆上的其他開口重疊',
 
   // electricals（插座）
   'electricals.title': '插座',
@@ -138,6 +139,7 @@ window.LOCALES['zh-TW'] = {
   // elevation mode
   'mode.needRoom': '請先建立房間',
   'elevation.room': '房間',
+  'elevation.viewHint': '頁籤代表你站的位置——「上」表示你站在房間上方，往下方牆的方向看過去。',
   'elevation.wallTop': '上牆',
   'elevation.wallRight': '右牆',
   'elevation.wallBottom': '下牆',
