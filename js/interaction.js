@@ -165,6 +165,7 @@
   const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
 
   window.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey; // metaKey = Cmd on macOS
     if (e.code === 'Space' && !spaceHeld && !isTypingTarget(e.target)) {
       spaceHeld = true;
       window.stage.draggable(true);
@@ -173,6 +174,20 @@
     } else if ((e.key === 'Delete' || e.key === 'Backspace') && !isTypingTarget(e.target) && UI().selectedIds.length) {
       e.preventDefault();
       window.deleteSelected();
+    } else if (mod && e.key.toLowerCase() === 's') {
+      // Save should work even from inside a text field — it's not a text-
+      // editing shortcut, and without preventDefault the browser's own
+      // "Save Page As" dialog pops up instead.
+      e.preventDefault();
+      window.scheduleSave();
+    } else if (mod && !isTypingTarget(e.target) && e.key.toLowerCase() === 'z') {
+      // Inside a text field, leave Ctrl/Cmd+Z to the browser's native
+      // per-field undo instead of hijacking it for the canvas history.
+      e.preventDefault();
+      if (e.shiftKey) window.redo(); else window.undo();
+    } else if (mod && !isTypingTarget(e.target) && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      window.redo();
     }
   });
   window.addEventListener('keyup', (e) => {
