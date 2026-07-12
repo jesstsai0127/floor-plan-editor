@@ -1,7 +1,7 @@
 // AI Export: turns a room's (or several rooms') floor-plan + elevation data
 // into material a user can hand to an external image-gen model (Gemini/
 // Imagen) — no API call happens here, this module only produces a PNG and
-// three text formats for the user to copy/paste themselves.
+// two text formats for the user to copy/paste themselves.
 //
 // Reuses elevation.js's projection math (window.elevation*, exposed for
 // exactly this reason) rather than re-deriving wall/footprint geometry.
@@ -13,9 +13,13 @@
 // image-generation), the JSON prompt isolates visual dimensions into named
 // sections (core/style/environment/composition/materials/quality) per the
 // community-standard schema (github.com/pauhu/gemini-image-prompting-
-// handbook), and the negative prompt stays in the 5-15 token "sweet spot"
-// documented as most effective rather than dumping every possible exclusion
-// (ltx.io/blog/negative-prompts).
+// handbook). Exclusions are folded into the same prompt (as a trailing
+// "Avoid: ..." clause / a negative_prompt array) rather than a separate
+// negative-prompt output — Gemini's API has no distinct negative-prompt
+// field, everything has to live in one natural-language prompt
+// (ai.google.dev/gemini-api/docs/prompting-strategies); the token list
+// stays in the 5-15 token "sweet spot" documented as most effective rather
+// than dumping every possible exclusion (ltx.io/blog/negative-prompts).
 (function initAiExport() {
   const worldCmToPx = (cm) => cm * window.BASE_SCALE;
 
@@ -259,6 +263,12 @@
     return { furn, fix, elec };
   }
 
+  // Gemini/Imagen has no separate negative-prompt API field — exclusions have
+  // to be woven into the one text prompt (ai.google.dev/gemini-api/docs/
+  // prompting-strategies), so this stays a plain token list folded into
+  // buildPromptText/buildJsonPrompt rather than a standalone output.
+  const NEGATIVE_TOKENS = ['blurry', 'low resolution', 'distorted walls', 'warped perspective', 'unrealistic furniture placement', 'floating objects', 'duplicated furniture', 'extra rooms', 'text', 'watermark', 'logo', 'cluttered interior'];
+
   window.buildPromptText = function buildPromptText(room) {
     const { furn, fix, elec } = itemListText(room);
     const parts = [];
@@ -269,6 +279,7 @@
     if (fix.length) parts.push(`Openings: ${fix.join(', ')}.`);
     if (elec.length) parts.push(`Fixtures/outlets: ${elec.join(', ')}.`);
     parts.push('Natural daylight through any windows blended with soft ambient interior lighting, shot from eye level with a wide-angle lens, professional interior-photography composition.');
+    parts.push(`Avoid: ${NEGATIVE_TOKENS.join(', ')}.`);
     return parts.join(' ');
   };
 
@@ -284,11 +295,8 @@
       composition: { camera: 'eye level, wide-angle lens, professional interior-photography framing', views_provided: VIEW_ORDER },
       materials: { furniture: furn, openings: fix, fixtures: elec },
       quality: { photorealistic: true, resolution: 'high', keep_proportions_from_reference: true },
+      negative_prompt: NEGATIVE_TOKENS,
     }, null, 2);
-  };
-
-  window.buildNegativePrompt = function buildNegativePrompt() {
-    return 'blurry, low resolution, distorted walls, warped perspective, unrealistic furniture placement, floating objects, duplicated furniture, extra rooms, text, watermark, logo, cluttered interior';
   };
 
   window.buildCombinedPromptText = function buildCombinedPromptText(rooms) {
@@ -302,6 +310,7 @@
       roomLines.join('\n'),
       `Style: ${styleDescription()}.`,
       `Keep a consistent material palette and lighting language across all rooms so they read as one connected home. Natural daylight blended with soft ambient interior lighting, eye-level wide-angle framing, professional interior-photography composition.`,
+      `Avoid: ${NEGATIVE_TOKENS.join(', ')}.`,
     ].join('\n');
   };
 
@@ -319,6 +328,7 @@
         };
       }),
       quality: { photorealistic: true, resolution: 'high', keep_proportions_from_reference: true, consistent_style_across_rooms: true },
+      negative_prompt: NEGATIVE_TOKENS,
     }, null, 2);
   };
 })();
