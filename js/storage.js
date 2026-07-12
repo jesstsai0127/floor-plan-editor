@@ -4,6 +4,9 @@
   const STORAGE_KEY = 'floorPlanEditor.autosave.v1';
   let saveTimer = null;
 
+  // Single source of truth for "what is a project" — reused by autosave
+  // below, by history.js (undo/redo snapshots), and by Export JSON/Open
+  // (Phase 6) so all of them never drift into different shapes.
   function snapshotState() {
     return {
       settings: window.appState.settings,
@@ -14,6 +17,7 @@
       layers: window.appState.layers,
     };
   }
+  window.snapshotState = snapshotState;
 
   function save() {
     try {
@@ -59,6 +63,38 @@
     window.appState.electricals.forEach((e) => ensureTriple(e, { heightFromFloor: 30, objectHeight: 10 }));
   }
 
+  // Writes a snapshot (same shape snapshotState() returns) into the live
+  // appState. Shared by restoreAutosave (below), history.js's undo/redo, and
+  // the Open-file flow — one place that knows how to go from "a snapshot
+  // object" to "the app actually shows that project," so those three
+  // call sites can't drift into three different partial-restore behaviors.
+  window.applySnapshot = function applySnapshot(snapshot) {
+    if (snapshot.settings) Object.assign(window.appState.settings, snapshot.settings);
+    if (snapshot.rooms) {
+      window.appState.rooms.splice(0, window.appState.rooms.length, ...snapshot.rooms);
+      healIds(window.appState.rooms, window.appState.createRoomId);
+    }
+    if (snapshot.furniture) {
+      window.appState.furniture.splice(0, window.appState.furniture.length, ...snapshot.furniture);
+      healIds(window.appState.furniture, window.appState.createFurnitureId);
+    }
+    if (snapshot.fixtures) {
+      window.appState.fixtures.splice(0, window.appState.fixtures.length, ...snapshot.fixtures);
+      healIds(window.appState.fixtures, window.appState.createFixtureId);
+    }
+    if (snapshot.electricals) {
+      window.appState.electricals.splice(0, window.appState.electricals.length, ...snapshot.electricals);
+      healIds(window.appState.electricals, window.appState.createElectricalId);
+    }
+    if (snapshot.layers) {
+      snapshot.layers.forEach((saved) => {
+        const layer = window.appState.layers.find((l) => l.id === saved.id);
+        if (layer) Object.assign(layer, saved);
+      });
+    }
+    backfillHeights();
+  };
+
   window.restoreAutosave = function restoreAutosave() {
     let raw;
     try {
@@ -68,31 +104,7 @@
     }
     if (!raw) return false;
     try {
-      const snapshot = JSON.parse(raw);
-      if (snapshot.settings) Object.assign(window.appState.settings, snapshot.settings);
-      if (snapshot.rooms) {
-        window.appState.rooms.splice(0, window.appState.rooms.length, ...snapshot.rooms);
-        healIds(window.appState.rooms, window.appState.createRoomId);
-      }
-      if (snapshot.furniture) {
-        window.appState.furniture.splice(0, window.appState.furniture.length, ...snapshot.furniture);
-        healIds(window.appState.furniture, window.appState.createFurnitureId);
-      }
-      if (snapshot.fixtures) {
-        window.appState.fixtures.splice(0, window.appState.fixtures.length, ...snapshot.fixtures);
-        healIds(window.appState.fixtures, window.appState.createFixtureId);
-      }
-      if (snapshot.electricals) {
-        window.appState.electricals.splice(0, window.appState.electricals.length, ...snapshot.electricals);
-        healIds(window.appState.electricals, window.appState.createElectricalId);
-      }
-      if (snapshot.layers) {
-        snapshot.layers.forEach((saved) => {
-          const layer = window.appState.layers.find((l) => l.id === saved.id);
-          if (layer) Object.assign(layer, saved);
-        });
-      }
-      backfillHeights();
+      window.applySnapshot(JSON.parse(raw));
       return true;
     } catch (e) {
       console.warn('Autosave restore failed:', e);
