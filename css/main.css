@@ -1,3 +1,17 @@
+@font-face{
+  font-family:'Noto Sans Mono';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url(../vendor/NotoSansMono-Regular.woff2) format('woff2');
+}
+@font-face{
+  font-family:'Noto Sans TC';
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url(../vendor/NotoSansTC-Regular.woff2) format('woff2');
+}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --paper:#F5F0E8;--grid:#DDD5C0;
@@ -5,7 +19,7 @@
   --panel-bg:#FAF7F0;--panel-bd:#DDD5C0;
   --text-dk:#2C2416;--text-md:#5C4A2A;--text-lt:#F5F0E8;
   --accent:#4A7FA5;--sel:#C17F3B;--sticky:#FEF3C7;
-  --font:'Courier New',monospace;
+  --font:'Noto Sans Mono','Noto Sans TC',monospace;
 }
 html,body{height:100%}
 body{font-family:var(--font);background:#888;overflow:hidden}
