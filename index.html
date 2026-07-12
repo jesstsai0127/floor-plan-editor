@@ -19,14 +19,14 @@
     </div>
     <div class="vd"></div>
 
-    <button class="tbtn dim" disabled>＋ {{ t('topbar.new') }}</button>
+    <button class="tbtn" :class="{dim: !hasAnyContent}" @click="window.clearCanvas()">＋ {{ t('topbar.new') }}</button>
     <button class="tbtn dim" disabled>📂 {{ t('topbar.open') }}</button>
     <button class="tbtn" @click="forceSave">💾 {{ t('topbar.save') }}</button>
     <div class="vd"></div>
 
-    <button class="tbtn dim" disabled title="Coming in a later phase">↩</button>
-    <button class="tbtn dim" disabled title="Coming in a later phase">↪</button>
-    <button class="tbtn dim" disabled title="Coming in a later phase">🗑</button>
+    <button class="tbtn" :class="{dim: appState.ui.historyStep <= 0}" :disabled="appState.ui.historyStep <= 0" @click="window.undo()">↩</button>
+    <button class="tbtn" :class="{dim: appState.ui.historyStep >= appState.ui.historyLength - 1}" :disabled="appState.ui.historyStep >= appState.ui.historyLength - 1" @click="window.redo()">↪</button>
+    <button class="tbtn" :class="{dim: !hasAnyContent}" :disabled="!hasAnyContent" @click="window.clearCanvas()">🗑</button>
     <div class="vd"></div>
 
     <button class="tbtn" :class="{dim: !appState.rooms.length}" :disabled="!appState.rooms.length" :title="appState.rooms.length ? '' : t('mode.needRoom')" @click="openAiExport">🤖 {{ t('topbar.aiExport') }}</button>
@@ -507,6 +507,7 @@
 // grid settings (size/color/visible) instead of the hardcoded defaults.
 window.restoreAutosave();
 </script>
+<script src="js/history.js"></script>
 
 <script>
 // Vue mounts #app with no explicit template, so it in-DOM-compiles from the
@@ -556,6 +557,10 @@ Vue.createApp({
     );
     const selectedElectrical = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedElectricals.value.length === 1 ? selectedElectricals.value[0] : null
+    );
+
+    const hasAnyContent = Vue.computed(() =>
+      window.appState.rooms.length + window.appState.furniture.length + window.appState.fixtures.length + window.appState.electricals.length > 0
     );
 
     const saveNote = Vue.computed(() => {
@@ -836,6 +841,7 @@ Vue.createApp({
       selectedElectrical,
       selectedElectricals,
       totalSelectedCount,
+      hasAnyContent,
       saveNote,
       selectTool,
       forceSave,
