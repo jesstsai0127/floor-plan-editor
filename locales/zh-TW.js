@@ -12,6 +12,7 @@ window.LOCALES['zh-TW'] = {
   'topbar.aiExport': 'AI 匯出',
   'topbar.export': '匯出',
   'topbar.autosaved': '已自動儲存',
+  'zoom.fit': '縮放至可看見所有房間',
 
   // left toolbar
   'toolbar.select': '選取',
