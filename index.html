@@ -390,8 +390,7 @@
         </div>
         <div class="f"><label>{{ t('settings.language') }}</label>
           <select v-model="appState.settings.language">
-            <option value="en-US">{{ t('settings.langEnUS') }}</option>
-            <option value="zh-TW">{{ t('settings.langZhTW') }}</option>
+            <option v-for="loc in availableLocales" :key="loc.code" :value="loc.code">{{ loc.name }}</option>
           </select>
         </div>
 
@@ -521,6 +520,13 @@ Vue.createApp({
     const furnMenuOpen = Vue.ref(false);
     const openMenuOpen = Vue.ref(false);
     const settingsOpen = Vue.ref(false);
+    // Plain array, not a computed — the template's v-for sandbox can't
+    // resolve `window.*` reliably (see js/elevation.js tab-click history),
+    // so this is derived once here instead of inline in the template.
+    const availableLocales = Object.keys(window.LOCALES).map((code) => ({
+      code,
+      name: window.LOCALES[code]._langName || code,
+    }));
 
     const selectedRooms = Vue.computed(() =>
       window.appState.rooms.filter((r) => window.appState.ui.selectedIds.includes(r.id))
@@ -807,6 +813,7 @@ Vue.createApp({
       furnMenuOpen,
       openMenuOpen,
       settingsOpen,
+      availableLocales,
       aiExportSelectedRooms,
       aiExportPngUrl,
       aiExportPromptText,
