@@ -14,6 +14,7 @@ window.LOCALES['en-US'] = {
   'topbar.undo': 'Undo',
   'topbar.redo': 'Redo',
   'topbar.clear': 'Clear canvas',
+  'topbar.clearConfirm': 'Clear the whole canvas? You can undo this afterward.',
   'topbar.aiExport': 'AI Export',
   'topbar.export': 'Export',
   'topbar.autosaved': 'Auto-saved',
