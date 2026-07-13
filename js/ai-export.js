@@ -263,6 +263,19 @@
     return { furn, fix, elec };
   }
 
+  // Sticky notes carry real information the user typed on purpose (e.g. "this
+  // wall has a crack, don't render damage" or "keep this corner empty for a
+  // plant") — flattened across all 7 of the room's note contexts (floorplan +
+  // six elevation views) into one deduped list, since the prompt is a single
+  // combined string per room anyway; attributing each note to its exact
+  // originating view wouldn't add anything a text model could act on.
+  function noteListText(room) {
+    const texts = window.appState.stickyNotes
+      .filter((n) => n.roomId === room.id && n.text.trim())
+      .map((n) => n.text.trim());
+    return Array.from(new Set(texts));
+  }
+
   // Gemini/Imagen has no separate negative-prompt API field — exclusions have
   // to be woven into the one text prompt (ai.google.dev/gemini-api/docs/
   // prompting-strategies), so this stays a plain token list folded into
@@ -271,6 +284,7 @@
 
   window.buildPromptText = function buildPromptText(room) {
     const { furn, fix, elec } = itemListText(room);
+    const notes = noteListText(room);
     const parts = [];
     parts.push(`Turn this six-view line-art elevation reference sheet of "${room.name}" (${room.w}×${room.h}cm floor area, ${room.height}cm ceiling height) into a photorealistic ${stylePresetLabel()} interior photograph.`);
     parts.push(`The sheet shows six labeled views — Top, Right, Bottom, Left wall elevations, plus Ceiling and Floor plans — each outlined rectangle is a piece of furniture or a fixture at its exact proportions and position; keep the room's true proportions and the layout shown, but render it as a real photograph rather than a diagram.`);
@@ -278,6 +292,7 @@
     if (furn.length) parts.push(`Furniture to render: ${furn.join(', ')}.`);
     if (fix.length) parts.push(`Openings: ${fix.join(', ')}.`);
     if (elec.length) parts.push(`Fixtures/outlets: ${elec.join(', ')}.`);
+    if (notes.length) parts.push(`Notes: ${notes.join('; ')}.`);
     parts.push('Natural daylight through any windows blended with soft ambient interior lighting, shot from eye level with a wide-angle lens, professional interior-photography composition.');
     parts.push(`Avoid: ${NEGATIVE_TOKENS.join(', ')}.`);
     return parts.join(' ');
@@ -294,6 +309,7 @@
       },
       composition: { camera: 'eye level, wide-angle lens, professional interior-photography framing', views_provided: VIEW_ORDER },
       materials: { furniture: furn, openings: fix, fixtures: elec },
+      user_notes: noteListText(room),
       quality: { photorealistic: true, resolution: 'high', keep_proportions_from_reference: true },
       negative_prompt: NEGATIVE_TOKENS,
     }, null, 2);
@@ -304,14 +320,19 @@
       const { furn } = itemListText(r);
       return `- "${r.name}" (${r.w}×${r.h}cm, ceiling ${r.height}cm)${furn.length ? ': ' + furn.join(', ') : ''}`;
     });
-    return [
+    const allNotes = Array.from(new Set(rooms.flatMap((r) => noteListText(r))));
+    const lines = [
       `Turn this combined line-art reference sheet (${rooms.length} rooms, six elevation views each) into a cohesive set of photorealistic ${stylePresetLabel()} interior photographs — one per room, matching proportions and layout from the sketch.`,
       `Rooms:`,
       roomLines.join('\n'),
       `Style: ${styleDescription()}.`,
+    ];
+    if (allNotes.length) lines.push(`Notes: ${allNotes.join('; ')}.`);
+    lines.push(
       `Keep a consistent material palette and lighting language across all rooms so they read as one connected home. Natural daylight blended with soft ambient interior lighting, eye-level wide-angle framing, professional interior-photography composition.`,
       `Avoid: ${NEGATIVE_TOKENS.join(', ')}.`,
-    ].join('\n');
+    );
+    return lines.join('\n');
   };
 
   window.buildCombinedJsonPrompt = function buildCombinedJsonPrompt(rooms) {
@@ -325,6 +346,7 @@
           name: r.name,
           dimensions_cm: { width: r.w, depth: r.h, ceiling_height: r.height },
           furniture: furn, openings: fix, fixtures: elec,
+          user_notes: noteListText(r),
         };
       }),
       quality: { photorealistic: true, resolution: 'high', keep_proportions_from_reference: true, consistent_style_across_rooms: true },
