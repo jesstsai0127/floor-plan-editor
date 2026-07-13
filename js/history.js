@@ -44,16 +44,28 @@
   window.undo = function undo() { goTo(step - 1); };
   window.redo = function redo() { goTo(step + 1); };
 
-  // Wipes every entity array (rooms/furniture/fixtures/electricals) back to
-  // empty. Used by both the "Clear canvas" and "New" buttons — this app has
-  // no multi-project concept, so those two are the same action under
-  // different labels rather than two separately-maintained code paths.
+  // Called after loading a different project (Open) — undoing past this
+  // point would jump back into the PREVIOUS project's content, which is
+  // never what "undo" should mean right after opening a new file.
+  window.resetHistory = function resetHistory() {
+    stack = [JSON.stringify(window.snapshotState())];
+    step = 0;
+    window.appState.ui.historyStep = 0;
+    window.appState.ui.historyLength = 1;
+  };
+
+  // Wipes every entity array (rooms/furniture/fixtures/electricals/sticky
+  // notes) back to empty. Used by both the "Clear canvas" and "New" buttons
+  // — this app has no multi-project concept, so those two are the same
+  // action under different labels rather than two separately-maintained
+  // code paths.
   window.clearCanvas = function clearCanvas() {
     if (!window.confirm(window.t('topbar.clearConfirm'))) return;
     window.appState.rooms.splice(0);
     window.appState.furniture.splice(0);
     window.appState.fixtures.splice(0);
     window.appState.electricals.splice(0);
+    window.appState.stickyNotes.splice(0);
     window.appState.ui.selectedIds = [];
   };
 })();
