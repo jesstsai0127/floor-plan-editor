@@ -61,6 +61,7 @@
   // code paths.
   window.clearCanvas = function clearCanvas() {
     if (!window.confirm(window.t('topbar.clearConfirm'))) return;
+    window.hideTooltip(); // same stale-tooltip risk as deleteSelected() above
     window.appState.rooms.splice(0);
     window.appState.furniture.splice(0);
     window.appState.fixtures.splice(0);
