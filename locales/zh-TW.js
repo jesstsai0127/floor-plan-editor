@@ -15,8 +15,13 @@ window.LOCALES['zh-TW'] = {
   'topbar.redo': '重做',
   'topbar.clear': '清空畫布',
   'topbar.clearConfirm': '確定要清空整個畫布嗎？之後可以用復原救回來。',
+  'topbar.openConfirm': '要載入這個檔案嗎？目前畫布上的內容會被取代。',
+  'topbar.openInvalidFile': '這個檔案看起來不是 Floor Plan Editor 的專案檔（JSON 格式不正確或已損毀）。',
   'topbar.aiExport': 'AI 匯出',
   'topbar.export': '匯出',
+  'topbar.exportJson': '匯出 JSON（專案檔）',
+  'topbar.exportPng': '匯出 PNG（目前畫面）',
+  'topbar.exportPdf': '匯出 PDF（目前畫面）',
   'topbar.autosaved': '已自動儲存',
   'zoom.fit': '縮放至可看見所有房間',
 
@@ -173,4 +178,7 @@ window.LOCALES['zh-TW'] = {
   'aiExport.copy': '複製',
   'aiExport.copied': '已複製！',
   'aiExport.flowHint': '建議流程：下載六宮格 PNG → 上傳給 Gemini 當參考圖 → 貼上 Prompt（或 JSON Prompt，已經包含要避免的項目）→ 產生。',
+
+  // 便條紙
+  'stickyNotes.text': '便條內容',
 };
