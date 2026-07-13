@@ -22,8 +22,13 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'topbar.redo': 'TRANSLATE_ME: Redo',
   'topbar.clear': 'TRANSLATE_ME: Clear canvas',
   'topbar.clearConfirm': 'TRANSLATE_ME: Clear the whole canvas? You can undo this afterward.',
+  'topbar.openConfirm': 'TRANSLATE_ME: Load this file? It will replace everything currently on the canvas.',
+  'topbar.openInvalidFile': 'TRANSLATE_ME: That file doesn’t look like a Floor Plan Editor project (invalid or corrupted JSON).',
   'topbar.aiExport': 'TRANSLATE_ME: AI Export',
   'topbar.export': 'TRANSLATE_ME: Export',
+  'topbar.exportJson': 'TRANSLATE_ME: Export JSON (Project File)',
+  'topbar.exportPng': 'TRANSLATE_ME: Export PNG (Current View)',
+  'topbar.exportPdf': 'TRANSLATE_ME: Export PDF (Current View)',
   'topbar.autosaved': 'TRANSLATE_ME: Auto-saved',
   'zoom.fit': 'TRANSLATE_ME: Fit all rooms in view',
 
@@ -180,4 +185,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'aiExport.copy': 'TRANSLATE_ME: Copy',
   'aiExport.copied': 'TRANSLATE_ME: Copied!',
   'aiExport.flowHint': 'TRANSLATE_ME: Suggested flow: download the 6-grid PNG → upload it to Gemini as a reference image → paste the Prompt (or JSON Prompt, which already includes what to avoid) → generate.',
+
+  // sticky notes
+  'stickyNotes.text': 'TRANSLATE_ME: Note text',
 };
