@@ -63,6 +63,12 @@ body{font-family:var(--font);background:#888;overflow:hidden}
 .spop .sep{height:1px;background:#5a4a34;margin:2px 0}
 .spop .cat{font-size:8px;color:#7a6040;padding:2px 8px;letter-spacing:.05em;text-transform:uppercase}
 
+/* top-bar dropdowns (Export ▾): same look as the left-toolbar submenus, but
+   the button sits in a horizontal bar so the popover drops down below it
+   instead of flying out to the right. */
+.tbtn-wrap{position:relative;display:inline-flex}
+.spop.below{left:0;top:100%;margin-top:4px}
+
 /* ── CANVAS ── */
 #canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--paper)}
 .ruler-h{position:absolute;top:0;left:18px;right:0;height:18px;background:#EDE8DC;border-bottom:1px solid var(--grid);font-size:8px;color:var(--text-md);overflow:hidden;z-index:10;pointer-events:none}
