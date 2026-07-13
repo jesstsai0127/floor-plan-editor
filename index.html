@@ -20,7 +20,8 @@
     <div class="vd"></div>
 
     <button class="tbtn" :class="{dim: !hasAnyContent}" @click="window.clearCanvas()">＋ {{ t('topbar.new') }}</button>
-    <button class="tbtn dim" disabled>📂 {{ t('topbar.open') }}</button>
+    <button class="tbtn" @click="triggerOpenFile">📂 {{ t('topbar.open') }}</button>
+    <input id="openFileInput" type="file" accept="application/json" style="display:none" @change="openProjectFile">
     <button class="tbtn" @click="forceSave">💾 {{ t('topbar.save') }}</button>
     <div class="vd"></div>
 
@@ -31,7 +32,14 @@
 
     <button class="tbtn" :class="{dim: !appState.rooms.length}" :disabled="!appState.rooms.length" :title="appState.rooms.length ? '' : t('mode.needRoom')" @click="openAiExport">🤖 {{ t('topbar.aiExport') }}</button>
     <div class="vd"></div>
-    <button class="tbtn dim" disabled title="Coming in a later phase">↓ {{ t('topbar.export') }} ▾</button>
+    <div class="tbtn-wrap">
+      <button class="tbtn" :class="{dim: !hasAnyContent}" :disabled="!hasAnyContent" @click="exportMenuOpen = !exportMenuOpen">↓ {{ t('topbar.export') }} ▾</button>
+      <div class="spop below" v-if="exportMenuOpen">
+        <button @click="exportJson(); exportMenuOpen = false"><span class="si">🗎</span> {{ t('topbar.exportJson') }}</button>
+        <button @click="exportPng(); exportMenuOpen = false"><span class="si">🖼</span> {{ t('topbar.exportPng') }}</button>
+        <button @click="exportPdf(); exportMenuOpen = false"><span class="si">📄</span> {{ t('topbar.exportPdf') }}</button>
+      </div>
+    </div>
 
     <div class="sp"></div>
     <span class="save-note">{{ saveNote }}</span>
@@ -98,7 +106,7 @@
       <div class="tsep"></div>
 
       <div class="tgrp">
-        <button class="tt" disabled title="Coming in a later phase"><span class="ic">📝</span><span class="lb">{{ t('toolbar.note') }}</span></button>
+        <button class="tt" :class="{active: appState.ui.activeTool === 'note'}" @click="selectTool('note')"><span class="ic">📝</span><span class="lb">{{ t('toolbar.note') }}</span></button>
       </div>
     </div>
 
@@ -271,6 +279,20 @@
         </div>
       </template>
 
+      <template v-else-if="selectedStickyNote">
+        <div class="ps">
+          <div class="pt">{{ t('panel.properties') }} — {{ t('toolbar.note') }}</div>
+          <div class="f"><label>{{ t('stickyNotes.text') }}</label><textarea class="aix-ta" rows="5" v-model="selectedStickyNote.text"></textarea></div>
+        </div>
+        <div class="ps">
+          <div class="pt">{{ t('panel.position') }}</div>
+          <div class="fr">
+            <div class="f"><label>X (cm)</label><input type="number" v-model.number="selectedStickyNote.x"></div>
+            <div class="f"><label>Y (cm)</label><input type="number" v-model.number="selectedStickyNote.y"></div>
+          </div>
+        </div>
+      </template>
+
       <!-- multi-selection: count + list + batch actions -->
       <template v-else-if="totalSelectedCount > 1">
         <div class="ps">
@@ -286,6 +308,9 @@
           </div>
           <div class="ri" v-for="item in selectedElectricals" :key="item.id">
             <div class="rdot" style="background:#FAF7F0;border:1px solid #999"></div>{{ item.name }}
+          </div>
+          <div class="ri" v-for="note in selectedStickyNotes" :key="note.id">
+            <div class="rdot" style="background:var(--sticky)"></div>{{ note.text || t('toolbar.note') }}
           </div>
         </div>
         <div class="ps">
@@ -355,9 +380,9 @@
         </div>
       </div>
 
-      <div class="ps" v-if="selectedRoom || selectedFurnitureItem || selectedFixture || selectedElectrical">
+      <div class="ps" v-if="selectedRoom || selectedFurnitureItem || selectedFixture || selectedElectrical || selectedStickyNote">
         <div class="pt">{{ t('actions.title') }}</div>
-        <button class="pa ac" @click="jumpToElevation">↕ {{ t('actions.elevationView') }}</button>
+        <button class="pa ac" v-if="!selectedStickyNote" @click="jumpToElevation">↕ {{ t('actions.elevationView') }}</button>
         <button class="pa sc" v-if="!selectedFixture" @click="duplicateSelected">⧉ {{ t('actions.duplicate') }}</button>
         <button class="pa dn" @click="deleteSelected">✕ {{ t('actions.delete') }}</button>
       </div>
@@ -494,6 +519,7 @@
 <!-- Vendor libs (classic scripts, no ES modules — avoids file:// CORS issues) -->
 <script src="vendor/vue.global.min.js"></script>
 <script src="vendor/konva.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 
 <!-- App scripts — order matters -->
 <script src="locales/en.js"></script>
@@ -520,6 +546,7 @@ Vue.createApp({
   setup() {
     const furnMenuOpen = Vue.ref(false);
     const openMenuOpen = Vue.ref(false);
+    const exportMenuOpen = Vue.ref(false);
     const settingsOpen = Vue.ref(false);
     // Plain array, not a computed — the template's v-for sandbox can't
     // resolve `window.*` reliably (see js/elevation.js tab-click history),
@@ -541,8 +568,11 @@ Vue.createApp({
     const selectedElectricals = Vue.computed(() =>
       window.appState.electricals.filter((e) => window.appState.ui.selectedIds.includes(e.id))
     );
+    const selectedStickyNotes = Vue.computed(() =>
+      window.appState.stickyNotes.filter((n) => window.appState.ui.selectedIds.includes(n.id))
+    );
     const totalSelectedCount = Vue.computed(() =>
-      selectedRooms.value.length + selectedFurniture.value.length + selectedFixtures.value.length + selectedElectricals.value.length
+      selectedRooms.value.length + selectedFurniture.value.length + selectedFixtures.value.length + selectedElectricals.value.length + selectedStickyNotes.value.length
     );
     // single-selection views: only when exactly one entity (of that type, and
     // nothing else) is selected
@@ -558,9 +588,12 @@ Vue.createApp({
     const selectedElectrical = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedElectricals.value.length === 1 ? selectedElectricals.value[0] : null
     );
+    const selectedStickyNote = Vue.computed(() =>
+      totalSelectedCount.value === 1 && selectedStickyNotes.value.length === 1 ? selectedStickyNotes.value[0] : null
+    );
 
     const hasAnyContent = Vue.computed(() =>
-      window.appState.rooms.length + window.appState.furniture.length + window.appState.fixtures.length + window.appState.electricals.length > 0
+      window.appState.rooms.length + window.appState.furniture.length + window.appState.fixtures.length + window.appState.electricals.length + window.appState.stickyNotes.length > 0
     );
 
     const saveNote = Vue.computed(() => {
@@ -579,6 +612,64 @@ Vue.createApp({
       window.scheduleSave();
     }
 
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(window.snapshotState(), null, 2)], { type: 'application/json' });
+      const ts = new Date().toISOString().slice(0, 10);
+      window.triggerDownload(blob, `floorplan-${ts}.json`);
+    }
+
+    // Exports exactly what's currently on screen (whatever pan/zoom the user
+    // left the stage at) — confirmed with the user rather than assumed: no
+    // auto fit-to-content, no multi-page "every room, every view" document.
+    // Deselecting first keeps the orange selection outline out of the
+    // image; Vue.watch runs on the 'pre' flush (a microtask), not
+    // synchronously, so this needs an actual Vue.nextTick() before
+    // toDataURL() — capturing in the very same synchronous tick would still
+    // show the old (selected) render.
+    async function captureStageDataUrl() {
+      const prevSelected = window.appState.ui.selectedIds.slice();
+      window.appState.ui.selectedIds = [];
+      await Vue.nextTick();
+      const url = window.stage.toDataURL({ pixelRatio: 2 });
+      window.appState.ui.selectedIds = prevSelected;
+      return url;
+    }
+
+    async function exportPng() {
+      const url = await captureStageDataUrl();
+      window.triggerDownload(url, `floorplan-${new Date().toISOString().slice(0, 10)}.png`);
+    }
+
+    async function exportPdf() {
+      const url = await captureStageDataUrl();
+      const w = window.stage.width(), h = window.stage.height();
+      const pdf = new jspdf.jsPDF('l', 'px', [w, h]);
+      pdf.addImage(url, 'PNG', 0, 0, w, h);
+      pdf.save(`floorplan-${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    function triggerOpenFile() {
+      document.getElementById('openFileInput').click();
+    }
+
+    function openProjectFile(event) {
+      const file = event.target.files[0];
+      event.target.value = ''; // allow re-selecting the same filename later
+      if (!file) return;
+      if (!window.confirm(window.t('topbar.openConfirm'))) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          window.applySnapshot(JSON.parse(reader.result));
+          window.resetHistory();
+          window.appState.ui.selectedIds = [];
+        } catch (e) {
+          window.alert(window.t('topbar.openInvalidFile'));
+        }
+      };
+      reader.readAsText(file);
+    }
+
     function duplicateSelected() {
       if (selectedRoom.value) {
         const src = selectedRoom.value;
@@ -594,6 +685,11 @@ Vue.createApp({
         const src = selectedElectrical.value;
         const id = window.appState.createElectricalId();
         window.appState.electricals.push({ ...src, id, x: src.x + 20, y: src.y + 20, name: src.name + ' copy' });
+        window.appState.ui.selectedIds = [id];
+      } else if (selectedStickyNote.value) {
+        const src = selectedStickyNote.value;
+        const id = window.appState.createStickyNoteId();
+        window.appState.stickyNotes.push({ ...src, id, x: src.x + 20, y: src.y + 20 });
         window.appState.ui.selectedIds = [id];
       }
       // fixtures aren't duplicated — a duplicate would need its own wall
@@ -801,10 +897,7 @@ Vue.createApp({
       const S = window.appState;
       const combined = S.ui.aiExportRoomIds.length > 1 && !S.ui.aiExportViewRoomId;
       const room = S.rooms.find((r) => r.id === (S.ui.aiExportViewRoomId || S.ui.aiExportRoomIds[0]));
-      const a = document.createElement('a');
-      a.href = aiExportPngUrl.value;
-      a.download = combined ? 'floorplan-ai-export-combined.png' : `floorplan-ai-export-${(room && room.name) || 'room'}.png`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      window.triggerDownload(aiExportPngUrl.value, combined ? 'floorplan-ai-export-combined.png' : `floorplan-ai-export-${(room && room.name) || 'room'}.png`);
     }
 
     Vue.watch(
@@ -817,6 +910,7 @@ Vue.createApp({
       t: window.t,
       furnMenuOpen,
       openMenuOpen,
+      exportMenuOpen,
       settingsOpen,
       availableLocales,
       aiExportSelectedRooms,
@@ -840,11 +934,18 @@ Vue.createApp({
       selectedFixtures,
       selectedElectrical,
       selectedElectricals,
+      selectedStickyNote,
+      selectedStickyNotes,
       totalSelectedCount,
       hasAnyContent,
       saveNote,
       selectTool,
       forceSave,
+      exportJson,
+      exportPng,
+      exportPdf,
+      triggerOpenFile,
+      openProjectFile,
       duplicateSelected,
       deleteSelected,
       clickInList,
@@ -874,6 +975,7 @@ Vue.createApp({
 <script src="js/fixtures.js"></script>
 <script src="js/electricals.js"></script>
 <script src="js/elevation.js"></script>
+<script src="js/stickynotes.js"></script>
 <script src="js/ai-export.js"></script>
 <script src="js/minimap.js"></script>
 </body>
