@@ -99,6 +99,7 @@ window.LOCALES['en-US'] = {
   'settings.unitMetric': 'Metric (cm)',
   'settings.unitImperial': 'Imperial (in/ft)',
   'settings.wallThickness': 'Default wall thickness (cm)',
+  'settings.wallThicknessHint': "Only applies to new rooms — edit a room's own wall thickness in its properties panel",
   'settings.language': 'Language',
   'settings.grid': 'Grid',
   'settings.showGrid': 'Show grid',
