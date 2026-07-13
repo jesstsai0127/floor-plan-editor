@@ -52,7 +52,11 @@
   // defaults so restored data doesn't render as NaN in elevation mode.
   function backfillHeights() {
     const defRoomHeight = window.appState.settings.defaultRoomHeight;
-    window.appState.rooms.forEach((r) => { if (!r.height) r.height = defRoomHeight; });
+    const defWallThickness = window.appState.settings.wallThickness;
+    window.appState.rooms.forEach((r) => {
+      if (!r.height) r.height = defRoomHeight;
+      if (!r.wallThickness) r.wallThickness = defWallThickness;
+    });
 
     function ensureTriple(item, fallback) {
       const room = window.appState.rooms.find((r) => r.id === item.roomId);
