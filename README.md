@@ -20,6 +20,7 @@ double-click `index.html`, and you're drawing.
 - AI Export: a 2×3 grid PNG of clean line-art views plus ready-to-paste
   text/JSON prompts, so you can hand your plan to an image model and get a
   photorealistic render back
+- Undo/redo, sticky notes, and one-click JSON/PNG/PDF export
 - English and Traditional Chinese UI out of the box, more languages easy to
   add (see the very bottom of this file)
 
@@ -75,6 +76,19 @@ same wall — an invalid position is rejected with a short message.
 The **Socket** tool places electrical outlets anywhere inside a room, with
 the same height fields as openings.
 
+### Sticky Notes
+
+The **Note** tool drops a small annotation anywhere you click — unlike
+furniture, a note isn't confined to a room's bounds. Select it to type or
+edit its text in the right panel. Notes are scoped to whichever context you
+placed them in: floor-plan notes are their own set, and each of the six
+elevation views (Top/Right/Bottom/Left/Ceiling/Floor) of a room keeps a
+fully separate set from the others and from the floor plan — a note only
+ever shows up in the exact view you put it in, since its position only
+means something there. Note text is included in AI Export's prompts, so a
+note like "this wall gets direct afternoon sun" or "keep this corner clear
+for a plant" actually reaches the image model.
+
 ### Selecting, Multi-Select & Alignment
 
 - **Select tool** — click an item to select it
@@ -83,6 +97,9 @@ the same height fields as openings.
 - **Hold Space + drag** — pan the canvas
 - **Arrow keys** — nudge the current selection by 1 cm
 - **Delete / Backspace** — delete the current selection
+- **Ctrl/Cmd+Z** — undo, **Ctrl/Cmd+Shift+Z** (or **Ctrl+Y**) — redo
+- **Ctrl/Cmd+S** — save immediately (autosave already covers you; this is
+  just for peace of mind)
 - With 2+ items selected, the right panel offers batch **Align**
   (left/right/top/bottom/center-H/center-V) and **Delete all**
 
@@ -136,21 +153,32 @@ The gear icon opens Settings: measurement unit (metric now, imperial
 planned), default wall thickness, UI language, and grid visibility/spacing/
 color.
 
-### Autosave
+### Saving, New/Open & Export
 
 Every change is saved to the browser's local storage a moment after you
 make it — there's a **Save** button in the top bar too if you want to force
 it immediately, but you generally don't need to think about saving at all.
 This is per-browser, per-device storage: it doesn't sync across machines or
-survive clearing site data.
+survive clearing site data. **New** (or the 🗑 button next to Undo/Redo)
+clears the current drawing after confirming — this app only ever has one
+drawing open at a time, so the two buttons do the same thing.
+
+To move a project between browsers/devices, or keep a dated backup, use
+**Export ▾ → Export JSON**, then **Open** that file later (on any device)
+to load it back in — it fully replaces whatever's currently on the canvas,
+after a confirmation.
+
+**Export ▾ → Export PNG/PDF** captures exactly what's on screen right now
+— whatever pan/zoom you're currently at, floor plan or elevation view —
+as a single image or single-page PDF. It's a snapshot of your current
+view, not a multi-page technical document covering every room and view.
 
 ## Not Yet Built
 
-Being upfront about what this version doesn't do yet: creating a new blank
-project or opening a saved file from disk, undo/redo, exporting a PNG/PDF
-of the finished plan, and sticky notes on the canvas. These have UI
-placeholders that are visibly disabled — nothing here is a hidden or broken
-feature, just not built yet.
+Being upfront about what this version doesn't do yet: uploading a
+background image to trace over (the Background layer toggle exists, but
+nothing populates it yet). Nothing else is a hidden or broken feature —
+just not built yet.
 
 ## Tech Stack
 
