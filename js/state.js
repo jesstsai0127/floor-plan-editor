@@ -38,6 +38,7 @@ window.appState = Vue.reactive({
     currentRoomId: null,
     currentElevation: 'front',
     selectedIds: [], // ids of selected rooms/furniture/fixtures/electricals, prefixed 'room-'/'furn-'/'fix-'/'sock-'
+    selectedWallSide: null, // { roomId, side } | null — a specific wall segment clicked in the room properties panel, for per-side thickness editing
     activeLayerId: 'rooms',
     zoomFactor: 1, // 1 = 100%
     pointerX: 0, // cm — live cursor position over the canvas, written by canvas.js
