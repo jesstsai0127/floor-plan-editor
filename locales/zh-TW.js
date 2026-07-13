@@ -55,6 +55,13 @@ window.LOCALES['zh-TW'] = {
   'panel.wallThickness': '牆厚 (cm)',
   'panel.fillColor': '填色',
   'panel.position': '位置',
+  'panel.wallSide': '牆',
+  'panel.makeWallOpen': '打通這面牆（無牆）',
+  'panel.resetWallSide': '還原為房間預設值',
+  'wallSide.top': '上',
+  'wallSide.right': '右',
+  'wallSide.bottom': '下',
+  'wallSide.left': '左',
   'panel.nudgeHint': '方向鍵：微調 1 cm',
   'panel.rotation': '旋轉',
   'panel.emptyHint': '選擇「房間」工具，在畫布上拖曳即可畫出房間。邊緣會自動吸附其他房間與格線。Shift 點選或拖曳框選可多選；按住空白鍵可平移畫布。',
@@ -132,6 +139,7 @@ window.LOCALES['zh-TW'] = {
   'fixtures.objectHeight': '物件高度 (cm)',
   'fixtures.noWall': '附近沒有牆——拖曳靠近房間邊緣',
   'fixtures.overlaps': '跟這面牆上的其他開口重疊',
+  'fixtures.removeForOpenWallConfirm': '這面牆上還有 {n} 個門/窗，打通這面牆會一併移除它們，確定要繼續嗎？',
 
   // electricals（插座）
   'electricals.title': '插座',
