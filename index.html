@@ -412,7 +412,10 @@
               <option value="in" disabled>{{ t('settings.unitImperial') }}</option>
             </select>
           </div>
-          <div class="f" style="flex:1"><label>{{ t('settings.wallThickness') }}</label><input type="number" min="1" v-model.number="appState.settings.wallThickness"></div>
+          <div class="f" style="flex:1"><label>{{ t('settings.wallThickness') }}</label>
+            <input type="number" min="1" v-model.number="appState.settings.wallThickness">
+            <div style="font-size:8px;color:#aaa;margin-top:2px">{{ t('settings.wallThicknessHint') }}</div>
+          </div>
         </div>
         <div class="f"><label>{{ t('settings.language') }}</label>
           <select v-model="appState.settings.language">
