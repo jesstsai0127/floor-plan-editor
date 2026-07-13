@@ -62,6 +62,13 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'panel.wallThickness': 'TRANSLATE_ME: Wall thickness (cm)',
   'panel.fillColor': 'TRANSLATE_ME: Fill color',
   'panel.position': 'TRANSLATE_ME: Position',
+  'panel.wallSide': 'TRANSLATE_ME: Wall',
+  'panel.makeWallOpen': 'TRANSLATE_ME: Open this wall (no wall)',
+  'panel.resetWallSide': 'TRANSLATE_ME: Reset to room default',
+  'wallSide.top': 'TRANSLATE_ME: Top',
+  'wallSide.right': 'TRANSLATE_ME: Right',
+  'wallSide.bottom': 'TRANSLATE_ME: Bottom',
+  'wallSide.left': 'TRANSLATE_ME: Left',
   'panel.nudgeHint': 'TRANSLATE_ME: Arrow keys: nudge 1 cm',
   'panel.rotation': 'TRANSLATE_ME: Rotation',
   'panel.emptyHint': 'TRANSLATE_ME: Pick the Room tool, then drag on the canvas to draw a room. Edges snap to other rooms and the grid. Shift-click or drag a box to select several; hold Space to pan.',
@@ -139,6 +146,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'fixtures.objectHeight': 'TRANSLATE_ME: Object height (cm)',
   'fixtures.noWall': 'TRANSLATE_ME: No wall nearby — drag closer to a room edge',
   'fixtures.overlaps': 'TRANSLATE_ME: Overlaps another opening on this wall',
+  'fixtures.removeForOpenWallConfirm': 'TRANSLATE_ME: This wall has {n} door(s)/window(s) on it. Opening the wall will remove them too. Continue?',
 
   // electricals
   'electricals.title': 'TRANSLATE_ME: Sockets',
