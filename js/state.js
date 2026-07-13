@@ -4,7 +4,7 @@
 window.appState = Vue.reactive({
   settings: {
     unit: 'cm',
-    wallThickness: 15,
+    wallThickness: 15, // cm — new rooms' wall thickness; each room can override its own
     defaultRoomHeight: 280, // cm — new rooms' ceiling height; each room can override its own
     language: 'en-US', // 'en-US' | 'zh-TW'
     gridVisible: true,
