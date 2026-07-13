@@ -1,5 +1,6 @@
 // localStorage autosave. Persists every entity array — rooms, furniture,
-// fixtures (openings), electricals (sockets) — plus settings/layers.
+// fixtures (openings), electricals (sockets), sticky notes — plus
+// settings/layers.
 (function initStorage() {
   const STORAGE_KEY = 'floorPlanEditor.autosave.v1';
   let saveTimer = null;
@@ -14,6 +15,7 @@
       furniture: window.appState.furniture,
       fixtures: window.appState.fixtures,
       electricals: window.appState.electricals,
+      stickyNotes: window.appState.stickyNotes,
       layers: window.appState.layers,
     };
   }
@@ -86,6 +88,10 @@
       window.appState.electricals.splice(0, window.appState.electricals.length, ...snapshot.electricals);
       healIds(window.appState.electricals, window.appState.createElectricalId);
     }
+    if (snapshot.stickyNotes) {
+      window.appState.stickyNotes.splice(0, window.appState.stickyNotes.length, ...snapshot.stickyNotes);
+      healIds(window.appState.stickyNotes, window.appState.createStickyNoteId);
+    }
     if (snapshot.layers) {
       snapshot.layers.forEach((saved) => {
         const layer = window.appState.layers.find((l) => l.id === saved.id);
@@ -110,6 +116,21 @@
       console.warn('Autosave restore failed:', e);
       return false;
     }
+  };
+
+  // Shared by Export JSON/PNG/PDF (Phase 6) — accepts either a data URL
+  // string (PNG/PDF) or a Blob (JSON), so all three export paths trigger
+  // their download through the same "create <a>, click, remove" dance
+  // instead of each re-implementing it.
+  window.triggerDownload = function triggerDownload(dataUrlOrBlob, filename) {
+    const url = dataUrlOrBlob instanceof Blob ? URL.createObjectURL(dataUrlOrBlob) : dataUrlOrBlob;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (dataUrlOrBlob instanceof Blob) URL.revokeObjectURL(url);
   };
 
   window.appState.lastSavedAt = null;
