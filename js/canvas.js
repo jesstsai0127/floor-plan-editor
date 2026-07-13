@@ -21,21 +21,24 @@ window.BASE_SCALE = 0.4;
   const furnitureLayer = new Konva.Layer();
   const fixturesLayer = new Konva.Layer(); // openings (doors/windows)
   const electricalsLayer = new Konva.Layer(); // sockets
+  const notesLayer = new Konva.Layer(); // Phase 6: floorplan sticky notes — on top, since they're annotations
   const elevationLayer = new Konva.Layer(); // Phase 4: elevation-mode projection
   stage.add(gridLayer);
   stage.add(roomsLayer);
   stage.add(furnitureLayer);
   stage.add(fixturesLayer);
   stage.add(electricalsLayer);
+  stage.add(notesLayer);
   stage.add(elevationLayer);
   window.gridLayer = gridLayer;
   window.roomsLayer = roomsLayer;
   window.furnitureLayer = furnitureLayer;
   window.fixturesLayer = fixturesLayer;
   window.electricalsLayer = electricalsLayer;
+  window.notesLayer = notesLayer;
   window.elevationLayer = elevationLayer;
 
-  const FLOORPLAN_LAYERS = [gridLayer, roomsLayer, furnitureLayer, fixturesLayer, electricalsLayer];
+  const FLOORPLAN_LAYERS = [gridLayer, roomsLayer, furnitureLayer, fixturesLayer, electricalsLayer, notesLayer];
 
   // live cursor position, in cm — written here (not in the Vue app) so it
   // works regardless of when/whether the Vue app has mounted
