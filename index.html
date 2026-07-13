@@ -147,6 +147,7 @@
             <div class="f"><label>{{ t('panel.depth') }}</label><input type="number" min="20" :value="selectedRoom.h" @change="window.setRoomH(selectedRoom.id, $event.target.valueAsNumber)"></div>
           </div>
           <div class="f"><label>{{ t('panel.height') }}</label><input type="number" min="100" v-model.number="selectedRoom.height"></div>
+          <div class="f"><label>{{ t('panel.wallThickness') }}</label><input type="number" min="1" v-model.number="selectedRoom.wallThickness"></div>
           <div class="f"><label>{{ t('panel.fillColor') }}</label>
             <div class="csw" :style="{background: selectedRoom.color}"><div class="cd" :style="{background: selectedRoom.color}"></div>{{ selectedRoom.color }}</div>
           </div>
@@ -542,7 +543,7 @@ window.restoreAutosave();
 // Konva attaches to #konva-container first, Vue's mount silently discards
 // the very canvas elements Konva wired up, leaving a look-alike decoy with
 // no event bindings (clicks/drags on it do nothing).
-Vue.createApp({
+const app = Vue.createApp({
   setup() {
     const furnMenuOpen = Vue.ref(false);
     const openMenuOpen = Vue.ref(false);
@@ -964,7 +965,16 @@ Vue.createApp({
       jumpToElevation,
     };
   },
-}).mount('#app');
+});
+// `window` is not in Vue's runtime-compiler global-identifier allowlist
+// (only Math/Date/JSON/... are), so a bare `window.foo()` inside a template
+// expression silently resolves `window` to undefined instead of the real
+// global — every inline `@click="window.X()"`/`@change="window.X()"` in this
+// template was broken until this was registered (confirmed via real DOM
+// events, not direct window.X() calls, on New/Undo/Redo/Clear and the room
+// width/depth/X/Y panel inputs).
+app.config.globalProperties.window = window;
+app.mount('#app');
 </script>
 
 <!-- Konva must attach after the Vue mount above has produced its final DOM -->
