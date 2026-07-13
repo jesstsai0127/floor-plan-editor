@@ -106,6 +106,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'settings.unitMetric': 'TRANSLATE_ME: Metric (cm)',
   'settings.unitImperial': 'TRANSLATE_ME: Imperial (in/ft)',
   'settings.wallThickness': 'TRANSLATE_ME: Default wall thickness (cm)',
+  'settings.wallThicknessHint': "TRANSLATE_ME: Only applies to new rooms — edit a room's own wall thickness in its properties panel",
   'settings.language': 'TRANSLATE_ME: Language',
   'settings.grid': 'TRANSLATE_ME: Grid',
   'settings.showGrid': 'TRANSLATE_ME: Show grid',
