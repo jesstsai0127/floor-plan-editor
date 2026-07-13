@@ -159,7 +159,7 @@
       // drawn thicker than the wall itself (wallThickness + 5cm) so it
       // visibly protrudes on both faces instead of blending into the wall
       // stroke and becoming hard to click
-      const windowThicknessPx = cmToPx(window.appState.settings.wallThickness + 5);
+      const windowThicknessPx = cmToPx(room.wallThickness + 5);
       group.add(new Konva.Line({
         points: [cmToPx(p0.x), cmToPx(p0.y), cmToPx(p1.x), cmToPx(p1.y)],
         stroke: isSelected ? '#C17F3B' : '#4A7FA5', strokeWidth: windowThicknessPx,
@@ -377,7 +377,7 @@
   Vue.watch(
     () => [
       window.appState.fixtures.map((f) => `${f.id}:${f.roomId}:${f.wallId}:${f.posOnWall}:${f.width}:${f.type}:${f.name}`).join(','),
-      window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.shape}`).join(','), // walls move with the room
+      window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.shape}:${r.wallThickness}`).join(','), // walls move with the room
       window.appState.ui.selectedIds.join(','),
       window.appState.ui.zoomFactor,
     ],
