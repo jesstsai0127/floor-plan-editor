@@ -16,6 +16,11 @@ window.appState = Vue.reactive({
   furniture: [],
   fixtures: [],
   electricals: [],
+  // { id, roomId, view, x, y, text }. `view` is 'floorplan' or one of
+  // elevation.js's six view ids ('top'|'right'|'bottom'|'left'|'ceiling'|
+  // 'floor') — a note's (x,y) is only meaningful within its own view's
+  // coordinate system, so each of a room's 7 contexts keeps a fully
+  // independent set of notes rather than one shared pool.
   stickyNotes: [],
   backgroundImage: { src: null, x: 0, y: 0, scaleRatio: 1 },
 
@@ -29,7 +34,7 @@ window.appState = Vue.reactive({
 
   ui: {
     mode: 'floorplan', // 'floorplan' | 'elevation'
-    activeTool: 'select', // 'select' | 'room-rect' | 'furn-*' | 'fixture-*' | 'socket'
+    activeTool: 'select', // 'select' | 'room-rect' | 'furn-*' | 'fixture-*' | 'socket' | 'note'
     currentRoomId: null,
     currentElevation: 'front',
     selectedIds: [], // ids of selected rooms/furniture/fixtures/electricals, prefixed 'room-'/'furn-'/'fix-'/'sock-'
@@ -75,5 +80,12 @@ let nextElectricalId = Date.now();
 window.appState.createElectricalId = () => {
   let id;
   do { id = `sock-${nextElectricalId++}`; } while (window.appState.electricals.some((e) => e.id === id));
+  return id;
+};
+
+let nextStickyNoteId = Date.now();
+window.appState.createStickyNoteId = () => {
+  let id;
+  do { id = `note-${nextStickyNoteId++}`; } while (window.appState.stickyNotes.some((n) => n.id === id));
   return id;
 };
