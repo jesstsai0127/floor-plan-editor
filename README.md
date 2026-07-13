@@ -40,10 +40,17 @@ go (see **Autosave** below) — there's no explicit save step to remember.
 ### Rooms
 
 Pick the **Room** tool in the left toolbar, then press, drag, and release on
-the canvas to draw a rectangular room. Edges snap to the grid and to other
-rooms as you draw. Select a room to edit its name, width/depth, fill color,
-and exact X/Y position/size in the right panel — typing a number there also
-snaps to nearby room edges within 5 cm.
+the canvas to draw a rectangular room. Edges snap to the grid and, when
+another room is close by, to a gap exactly one wall's thickness away — walls
+are drawn on the *outside* of each room's own footprint, so two rooms placed
+a wall-thickness apart combine into a single correctly-sized wall instead of
+each eating into the other's floor area. Select a room to edit its name,
+width/depth, ceiling height, wall thickness, fill color, and exact X/Y
+position/size in the right panel — typing a number there also snaps to
+nearby rooms the same way. Wall thickness defaults to the value in
+**Settings** for new rooms but can be overridden per room (e.g. a balcony
+with a thinner wall than the rest of the apartment) — changing the Settings
+default doesn't retroactively affect rooms already drawn.
 
 ### Furniture, Lighting & Structural Items
 
