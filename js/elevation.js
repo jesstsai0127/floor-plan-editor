@@ -325,6 +325,21 @@
         layer.add(sGroup);
       });
 
+      // sticky notes for this (room, view) context — always drawn last, on
+      // top of everything else, since they're annotations. x/y are already
+      // room-relative cm (see stickynotes.js), matching this branch's own
+      // coordinate space, so buildStickyNoteVisual needs no offset here.
+      window.appState.stickyNotes.forEach((note) => {
+        if (note.roomId !== room.id || note.view !== view) return;
+        const nGroup = window.buildStickyNoteVisual(note);
+        nGroup.on('click tap', (e) => {
+          if (window.consumeClickSuppression && window.consumeClickSuppression()) return;
+          e.cancelBubble = true;
+          UI().selectedIds = [note.id];
+        });
+        layer.add(nGroup);
+      });
+
       layer.batchDraw();
       return;
     }
@@ -428,6 +443,22 @@
       if (wallLen - proj.u1 > DIM_EPSILON_CM) addHDim(cmToPx(proj.u1), wallLenPx, yRow, wallLen - proj.u1);
     });
 
+    // sticky notes for this (room, view) context — drawn last, on top of
+    // everything else. x = u along this wall, y = distance from ceiling
+    // (0 = ceiling line, room.height = floor line) — the same coordinate
+    // space addBlock() above already places furniture/fixture/socket
+    // blocks in, so no conversion is needed here either.
+    window.appState.stickyNotes.forEach((note) => {
+      if (note.roomId !== room.id || note.view !== view) return;
+      const nGroup = window.buildStickyNoteVisual(note);
+      nGroup.on('click tap', (e) => {
+        if (window.consumeClickSuppression && window.consumeClickSuppression()) return;
+        e.cancelBubble = true;
+        UI().selectedIds = [note.id];
+      });
+      layer.add(nGroup);
+    });
+
     layer.batchDraw();
   }
   window.renderElevation = render;
@@ -446,6 +477,7 @@
       window.appState.fixtures.map((f) => `${f.id}:${f.roomId}:${f.wallId}:${f.posOnWall}:${f.width}:${f.heightFromFloor}:${f.objectHeight}:${f.type}:${f.name}`).join(','),
       window.appState.electricals.map((e) => `${e.id}:${e.x}:${e.y}:${e.heightFromFloor}:${e.objectHeight}:${e.name}`).join(','),
       window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.height}:${r.shape}`).join(','),
+      window.appState.stickyNotes.map((n) => `${n.id}:${n.roomId}:${n.view}:${n.x}:${n.y}:${n.text}`).join(','),
     ],
     render,
     { immediate: true }
