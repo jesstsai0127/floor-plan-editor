@@ -99,6 +99,7 @@ window.LOCALES['zh-TW'] = {
   'settings.unitMetric': '公制 (cm)',
   'settings.unitImperial': '英制 (in/ft)',
   'settings.wallThickness': '預設牆厚 (cm)',
+  'settings.wallThicknessHint': '只影響新建立的房間，既有房間的牆厚請在右側面板個別調整',
   'settings.language': '語言',
   'settings.grid': '格線',
   'settings.showGrid': '顯示格線',
