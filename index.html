@@ -160,6 +160,20 @@
             <div class="f"><label>Y (cm)</label><input type="number" :value="selectedRoom.y" @change="window.setRoomY(selectedRoom.id, $event.target.valueAsNumber)"></div>
           </div>
         </div>
+
+        <!-- click a specific wall segment on the canvas to focus it here —
+             lets a wall's thickness be overridden per side, including 0
+             (open, no wall — see js/room.js setRoomWallSide) -->
+        <div class="ps" v-if="selectedWallSideInfo">
+          <div class="pt">{{ t('panel.wallSide') }} — {{ t('wallSide.' + selectedWallSideInfo.side) }}</div>
+          <div class="f"><label>{{ t('panel.wallThickness') }}</label>
+            <input type="number" min="0" :value="selectedWallSideInfo.thickness" @change="setWallSideThickness($event.target.valueAsNumber)">
+          </div>
+          <div class="fr">
+            <button class="pa sc" v-if="selectedWallSideInfo.thickness !== 0" @click="setWallSideThickness(0)">{{ t('panel.makeWallOpen') }}</button>
+            <button class="pa sc" v-if="selectedWallSideInfo.override" @click="setWallSideThickness(null)">{{ t('panel.resetWallSide') }}</button>
+          </div>
+        </div>
       </template>
 
       <template v-else-if="selectedFurnitureItem">
@@ -583,6 +597,16 @@ const app = Vue.createApp({
     const selectedRoom = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedRooms.value.length === 1 ? selectedRooms.value[0] : null
     );
+    const selectedWallSideInfo = Vue.computed(() => {
+      const sel = appState.ui.selectedWallSide;
+      if (!sel || !selectedRoom.value || sel.roomId !== selectedRoom.value.id) return null;
+      const override = selectedRoom.value.wallSides ? selectedRoom.value.wallSides[sel.side] : null;
+      return { side: sel.side, thickness: window.roomSideThickness(selectedRoom.value, sel.side), override: override != null };
+    });
+    function setWallSideThickness(val) {
+      if (!selectedWallSideInfo.value) return;
+      window.setRoomWallSide(selectedRoom.value.id, selectedWallSideInfo.value.side, val);
+    }
     const selectedFurnitureItem = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedFurniture.value.length === 1 ? selectedFurniture.value[0] : null
     );
@@ -931,6 +955,8 @@ const app = Vue.createApp({
       downloadAiExportPng,
       regenerateAiExport,
       selectedRoom,
+      selectedWallSideInfo,
+      setWallSideThickness,
       selectedRooms,
       selectedFurnitureItem,
       selectedFurniture,
