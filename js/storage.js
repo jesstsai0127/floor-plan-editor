@@ -56,6 +56,7 @@
     window.appState.rooms.forEach((r) => {
       if (!r.height) r.height = defRoomHeight;
       if (!r.wallThickness) r.wallThickness = defWallThickness;
+      if (!r.wallSides) r.wallSides = { top: null, right: null, bottom: null, left: null };
     });
 
     function ensureTriple(item, fallback) {
