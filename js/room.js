@@ -23,7 +23,7 @@
   const roomIds = () => UI().selectedIds.filter((id) => id.startsWith('room-'));
 
   function makeShapeNode(room) {
-    const strokeWidth = Math.max(1, cmToPx(S().wallThickness));
+    const strokeWidth = Math.max(1, cmToPx(room.wallThickness));
     const common = {
       width: cmToPx(room.w),
       height: cmToPx(room.h),
@@ -277,6 +277,7 @@
       name: window.t('room.defaultName') + ' ' + (window.appState.rooms.length + 1),
       x: Math.round(xCm), y: Math.round(yCm), w: Math.round(wCm), h: Math.round(hCm),
       height: window.appState.settings.defaultRoomHeight,
+      wallThickness: window.appState.settings.wallThickness,
       color, shape: 'rect',
     });
     UI().selectedIds = [id];
@@ -304,10 +305,19 @@
   }
   function neighborEdgesCm(skipId, axis) {
     const edges = [];
+    // Same wall-gap reasoning as stops() above — a typed X/Y/W/H should be
+    // able to snap flush to a neighbor's edge (alignment) OR one wall
+    // thickness off it (abutting with a real shared wall), not just flush.
+    // Each room can have its own wallThickness now, so the reserved gap
+    // for a given pair is whichever of the two demands more (a wall has
+    // to be thick enough for both sides).
+    const moving = roomById(skipId);
+    const movingThickness = moving ? moving.wallThickness : S().wallThickness;
     window.appState.rooms.forEach((r) => {
       if (r.id === skipId) return;
-      if (axis === 'x') edges.push(r.x, r.x + r.w);
-      else edges.push(r.y, r.y + r.h);
+      const wt = Math.max(movingThickness, r.wallThickness);
+      if (axis === 'x') edges.push(r.x, r.x + r.w, r.x - wt, r.x + r.w + wt);
+      else edges.push(r.y, r.y + r.h, r.y - wt, r.y + r.h + wt);
     });
     return edges;
   }
@@ -345,11 +355,27 @@
     idPrefix: 'room',
     stops(skipSet) {
       const V = [], H = [];
+      // Besides flush edge/centre alignment, offer stops one wall-thickness
+      // off each room's edges too — so dragging a new room up against an
+      // existing one snaps with a real gap for the shared wall instead of
+      // sitting flush (which would make wallThickness pure decoration).
+      // Each room can have its own wallThickness, so the gap for a given
+      // pair is whichever side demands more — the room(s) being dragged
+      // are excluded from the candidate pool (skipSet) but still need
+      // their own thickness looked up to compute that max. Drawing a
+      // brand-new room has no "own" thickness yet (skipSet is null), so
+      // fall back to what it'll actually be created with.
+      let movingThickness = S().wallThickness;
+      if (skipSet && skipSet.size) {
+        movingThickness = 0;
+        window.appState.rooms.forEach((r) => { if (skipSet.has(r.id)) movingThickness = Math.max(movingThickness, r.wallThickness); });
+      }
       window.appState.rooms.forEach((r) => {
         if (skipSet && skipSet.has(r.id)) return;
         const x = cmToPx(r.x), y = cmToPx(r.y), w = cmToPx(r.w), h = cmToPx(r.h);
-        V.push(x, x + w / 2, x + w);
-        H.push(y, y + h / 2, y + h);
+        const wt = cmToPx(Math.max(movingThickness, r.wallThickness));
+        V.push(x, x + w / 2, x + w, x - wt, x + w + wt);
+        H.push(y, y + h / 2, y + h, y - wt, y + h + wt);
       });
       return { V, H };
     },
@@ -449,10 +475,9 @@
 
   Vue.watch(
     () => [
-      window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.color}:${r.shape}:${r.name}`).join(','),
+      window.appState.rooms.map((r) => `${r.id}:${r.x}:${r.y}:${r.w}:${r.h}:${r.color}:${r.shape}:${r.name}:${r.wallThickness}`).join(','),
       window.appState.ui.selectedIds.join(','),
       window.appState.ui.activeTool,
-      window.appState.settings.wallThickness,
       window.appState.ui.zoomFactor,
     ],
     render,
