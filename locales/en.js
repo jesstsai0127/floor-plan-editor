@@ -15,8 +15,13 @@ window.LOCALES['en-US'] = {
   'topbar.redo': 'Redo',
   'topbar.clear': 'Clear canvas',
   'topbar.clearConfirm': 'Clear the whole canvas? You can undo this afterward.',
+  'topbar.openConfirm': 'Load this file? It will replace everything currently on the canvas.',
+  'topbar.openInvalidFile': 'That file doesn’t look like a Floor Plan Editor project (invalid or corrupted JSON).',
   'topbar.aiExport': 'AI Export',
   'topbar.export': 'Export',
+  'topbar.exportJson': 'Export JSON (Project File)',
+  'topbar.exportPng': 'Export PNG (Current View)',
+  'topbar.exportPdf': 'Export PDF (Current View)',
   'topbar.autosaved': 'Auto-saved',
   'zoom.fit': 'Fit all rooms in view',
 
@@ -173,4 +178,7 @@ window.LOCALES['en-US'] = {
   'aiExport.copy': 'Copy',
   'aiExport.copied': 'Copied!',
   'aiExport.flowHint': 'Suggested flow: download the 6-grid PNG → upload it to Gemini as a reference image → paste the Prompt (or JSON Prompt, which already includes what to avoid) → generate.',
+
+  // sticky notes
+  'stickyNotes.text': 'Note text',
 };
