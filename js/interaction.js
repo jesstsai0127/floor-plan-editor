@@ -200,6 +200,10 @@
 
   // delete whatever's currently selected, routed to the right provider per id
   window.deleteSelected = function deleteSelected() {
+    // a deleted node never fires 'mouseout', so a tooltip left showing for
+    // it (e.g. Delete pressed while still hovering) would otherwise stick
+    // on screen forever
+    window.hideTooltip();
     const byPrefix = {};
     UI().selectedIds.forEach((id) => {
       const p = providerFor(id);
