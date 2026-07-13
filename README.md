@@ -173,12 +173,12 @@ after a confirmation.
 as a single image or single-page PDF. It's a snapshot of your current
 view, not a multi-page technical document covering every room and view.
 
-## Not Yet Built
+## Known Limitations
 
-Being upfront about what this version doesn't do yet: uploading a
-background image to trace over (the Background layer toggle exists, but
-nothing populates it yet). Nothing else is a hidden or broken feature —
-just not built yet.
+There's a Background layer toggle in the layer list, but no upload feature
+that populates it yet. This isn't on a roadmap — it's simply unimplemented,
+and only gets picked up if an actual need for it comes up. Nothing else
+here is a hidden or broken feature.
 
 ## Tech Stack
 
