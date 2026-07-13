@@ -22,17 +22,40 @@
   const UI = () => window.appState.ui;
   const roomIds = () => UI().selectedIds.filter((id) => id.startsWith('room-'));
 
+  // The room's true footprint (fill only, no stroke) — this is the node
+  // Transformer/hit-testing/selection-highlight all operate on, so resize
+  // math (commitTransform below) never has to account for wall thickness.
   function makeShapeNode(room) {
-    const strokeWidth = Math.max(1, cmToPx(room.wallThickness));
-    const common = {
+    return new Konva.Rect({
       width: cmToPx(room.w),
       height: cmToPx(room.h),
       fill: room.color,
-      stroke: '#2C2416',
-      strokeWidth,
       name: 'roomShape',
-    };
-    return new Konva.Rect(common);
+    });
+  }
+
+  // The wall itself, drawn OUTSIDE the room's true footprint only — a plain
+  // centered Konva stroke would bleed half its width inward too, silently
+  // eating into the room's own floor area and (when two rooms are snapped
+  // one wall-thickness apart, see stops()/neighborEdgesCm() below) doubling
+  // up with the neighbor's inward bleed into a wall that reads as 2x the
+  // configured thickness. Inflating the rect by half the stroke width on
+  // every side, then centering that same stroke on the inflated box, makes
+  // the whole band land in [true edge, true edge + thickness] — purely
+  // outward, so two rooms placed thickness-apart combine into one correctly
+  // sized wall instead of each other's fill.
+  function makeWallFrameNode(room) {
+    const t = Math.max(1, cmToPx(room.wallThickness));
+    return new Konva.Rect({
+      x: -t / 2,
+      y: -t / 2,
+      width: cmToPx(room.w) + t,
+      height: cmToPx(room.h) + t,
+      stroke: '#2C2416',
+      strokeWidth: t,
+      listening: false,
+      name: 'roomWallFrame',
+    });
   }
 
   // Resizing a room can leave contained furniture no longer fully covered
@@ -117,6 +140,7 @@
       groupById[room.id] = group;
       const shape = makeShapeNode(room);
       group.add(shape);
+      group.add(makeWallFrameNode(room));
 
       // Labels are sized in screen pixels (fontSize / scale) so they stay
       // legible at any zoom. Room name sits centred and single-line (no
@@ -305,19 +329,20 @@
   }
   function neighborEdgesCm(skipId, axis) {
     const edges = [];
-    // Same wall-gap reasoning as stops() above — a typed X/Y/W/H should be
-    // able to snap flush to a neighbor's edge (alignment) OR one wall
-    // thickness off it (abutting with a real shared wall), not just flush.
-    // Each room can have its own wallThickness now, so the reserved gap
-    // for a given pair is whichever of the two demands more (a wall has
-    // to be thick enough for both sides).
+    // Only offer the wall-thickness-apart candidate here, not a flush (0
+    // gap) one — walls are drawn OUTSIDE each room's own footprint now
+    // (see makeWallFrameNode), so flush would overlap the two rooms' walls
+    // into each other's floor area instead of forming one clean wall. Each
+    // room can have its own wallThickness, so the reserved gap for a given
+    // pair is whichever of the two demands more (the wall has to be thick
+    // enough for both sides).
     const moving = roomById(skipId);
     const movingThickness = moving ? moving.wallThickness : S().wallThickness;
     window.appState.rooms.forEach((r) => {
       if (r.id === skipId) return;
       const wt = Math.max(movingThickness, r.wallThickness);
-      if (axis === 'x') edges.push(r.x, r.x + r.w, r.x - wt, r.x + r.w + wt);
-      else edges.push(r.y, r.y + r.h, r.y - wt, r.y + r.h + wt);
+      if (axis === 'x') edges.push(r.x - wt, r.x + r.w + wt);
+      else edges.push(r.y - wt, r.y + r.h + wt);
     });
     return edges;
   }
@@ -355,16 +380,17 @@
     idPrefix: 'room',
     stops(skipSet) {
       const V = [], H = [];
-      // Besides flush edge/centre alignment, offer stops one wall-thickness
-      // off each room's edges too — so dragging a new room up against an
-      // existing one snaps with a real gap for the shared wall instead of
-      // sitting flush (which would make wallThickness pure decoration).
-      // Each room can have its own wallThickness, so the gap for a given
-      // pair is whichever side demands more — the room(s) being dragged
-      // are excluded from the candidate pool (skipSet) but still need
-      // their own thickness looked up to compute that max. Drawing a
-      // brand-new room has no "own" thickness yet (skipSet is null), so
-      // fall back to what it'll actually be created with.
+      // Centre-alignment stops, plus one wall-thickness off each room's
+      // edges (not a flush 0-gap stop — walls are drawn OUTSIDE each
+      // room's own footprint, see makeWallFrameNode, so a flush neighbor
+      // would overlap two walls into each other's floor area instead of
+      // forming one clean wall). Each room can have its own wallThickness,
+      // so the gap for a given pair is whichever side demands more — the
+      // room(s) being dragged are excluded from the candidate pool
+      // (skipSet) but still need their own thickness looked up to compute
+      // that max. Drawing a brand-new room has no "own" thickness yet
+      // (skipSet is null), so fall back to what it'll actually be created
+      // with.
       let movingThickness = S().wallThickness;
       if (skipSet && skipSet.size) {
         movingThickness = 0;
@@ -374,8 +400,8 @@
         if (skipSet && skipSet.has(r.id)) return;
         const x = cmToPx(r.x), y = cmToPx(r.y), w = cmToPx(r.w), h = cmToPx(r.h);
         const wt = cmToPx(Math.max(movingThickness, r.wallThickness));
-        V.push(x, x + w / 2, x + w, x - wt, x + w + wt);
-        H.push(y, y + h / 2, y + h, y - wt, y + h + wt);
+        V.push(x + w / 2, x - wt, x + w + wt);
+        H.push(y + h / 2, y - wt, y + h + wt);
       });
       return { V, H };
     },
