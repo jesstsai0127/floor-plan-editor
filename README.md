@@ -52,6 +52,15 @@ nearby rooms the same way. Wall thickness defaults to the value in
 with a thinner wall than the rest of the apartment) — changing the Settings
 default doesn't retroactively affect rooms already drawn.
 
+Each of a room's four walls can also be overridden individually: click
+directly on a wall segment on the canvas to select it and set its own
+thickness in the right panel, including **0 — an open boundary with no wall
+at all**, for an open-plan layout where two rooms are really one space (e.g.
+a kitchen and living room you still want labeled separately). Furniture can
+only cross between two rooms where both sides of that shared boundary are
+open; opening a wall that still has a door or window on it removes that
+opening too, after confirming.
+
 ### Furniture, Lighting & Structural Items
 
 Open the **Furniture** submenu in the left toolbar for three groups:
