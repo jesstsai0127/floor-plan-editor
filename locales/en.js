@@ -55,6 +55,13 @@ window.LOCALES['en-US'] = {
   'panel.wallThickness': 'Wall thickness (cm)',
   'panel.fillColor': 'Fill color',
   'panel.position': 'Position',
+  'panel.wallSide': 'Wall',
+  'panel.makeWallOpen': 'Open this wall (no wall)',
+  'panel.resetWallSide': 'Reset to room default',
+  'wallSide.top': 'Top',
+  'wallSide.right': 'Right',
+  'wallSide.bottom': 'Bottom',
+  'wallSide.left': 'Left',
   'panel.nudgeHint': 'Arrow keys: nudge 1 cm',
   'panel.rotation': 'Rotation',
   'panel.emptyHint': 'Pick the Room tool, then drag on the canvas to draw a room. Edges snap to other rooms and the grid. Shift-click or drag a box to select several; hold Space to pan.',
@@ -132,6 +139,7 @@ window.LOCALES['en-US'] = {
   'fixtures.objectHeight': 'Object height (cm)',
   'fixtures.noWall': 'No wall nearby — drag closer to a room edge',
   'fixtures.overlaps': 'Overlaps another opening on this wall',
+  'fixtures.removeForOpenWallConfirm': 'This wall has {n} door(s)/window(s) on it. Opening the wall will remove them too. Continue?',
 
   // electricals
   'electricals.title': 'Sockets',
