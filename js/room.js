@@ -177,6 +177,7 @@
         draggable: selectMode,
       });
       groupById[room.id] = group;
+      const scale = window.stage.scaleX();
       const shape = makeShapeNode(room);
       group.add(shape);
       const wallSideSel = UI().selectedWallSide;
@@ -186,7 +187,17 @@
             line.stroke('#C17F3B');
           }
           line.listening(true);
-          line.hitStrokeWidth(Math.max(14, line.strokeWidth()));
+          // Forgiving click target, but capped in WORLD terms (not just
+          // screen terms): a pure screen-px forgiveness (8/scale) grows
+          // *larger* in real-world cm the further you zoom out, which is
+          // backwards — that's exactly when rooms are small on screen and
+          // packed close together, so a big world-reach is most likely to
+          // swallow a click meant for a nearby room's own fill (or, once
+          // corner-extended, another wall entirely), silently
+          // selecting/editing the wrong room. Capping at 10cm of world
+          // reach keeps that risk bounded regardless of zoom, while still
+          // being comfortably clickable at normal-to-high zoom.
+          line.hitStrokeWidth(Math.max(line.strokeWidth(), Math.min(cmToPx(10), 8 / scale)));
           line.on('click tap', (e) => {
             if (window.consumeClickSuppression()) return;
             if (UI().activeTool !== 'select') return;
@@ -203,7 +214,6 @@
       // word-wrap, no ellipsis truncation — hidden entirely if it doesn't
       // fit); the width/height dimensions move out to the top/left walls,
       // architectural-drawing style. Hover tooltip is the safety net.
-      const scale = window.stage.scaleX();
       const wPx = cmToPx(room.w);
       const hPx = cmToPx(room.h);
       const nameFont = 13 / scale;
