@@ -58,6 +58,7 @@ window.LOCALES['zh-TW'] = {
   'panel.wallSide': '牆',
   'panel.makeWallOpen': '打通這面牆（無牆）',
   'panel.resetWallSide': '還原為房間預設值',
+  'panel.wallOpenTag': '通',
   'wallSide.top': '上',
   'wallSide.right': '右',
   'wallSide.bottom': '下',
