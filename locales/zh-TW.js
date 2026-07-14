@@ -66,7 +66,7 @@ window.LOCALES['zh-TW'] = {
   'panel.nudgeHint': '方向鍵：微調 1 cm',
   'panel.rotation': '旋轉',
   'panel.emptyHint': '選擇「房間」工具，在畫布上拖曳即可畫出房間。邊緣會自動吸附其他房間與格線。Shift 點選或拖曳框選可多選；按住空白鍵可平移畫布。',
-  'panel.roomsSelected': '個房間已選取',
+  'panel.itemsSelected': '個項目已選取',
   'panel.align': '對齊',
   'panel.alignLeft': '靠左',
   'panel.alignRight': '靠右',
