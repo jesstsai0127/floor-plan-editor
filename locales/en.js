@@ -66,7 +66,7 @@ window.LOCALES['en-US'] = {
   'panel.nudgeHint': 'Arrow keys: nudge 1 cm',
   'panel.rotation': 'Rotation',
   'panel.emptyHint': 'Pick the Room tool, then drag on the canvas to draw a room. Edges snap to other rooms and the grid. Shift-click or drag a box to select several; hold Space to pan.',
-  'panel.roomsSelected': 'rooms selected',
+  'panel.itemsSelected': 'items selected',
   'panel.align': 'Align',
   'panel.alignLeft': 'Left',
   'panel.alignRight': 'Right',
