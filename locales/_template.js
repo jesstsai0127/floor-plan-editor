@@ -65,6 +65,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'panel.wallSide': 'TRANSLATE_ME: Wall',
   'panel.makeWallOpen': 'TRANSLATE_ME: Open this wall (no wall)',
   'panel.resetWallSide': 'TRANSLATE_ME: Reset to room default',
+  'panel.wallOpenTag': 'TRANSLATE_ME: open',
   'wallSide.top': 'TRANSLATE_ME: Top',
   'wallSide.right': 'TRANSLATE_ME: Right',
   'wallSide.bottom': 'TRANSLATE_ME: Bottom',
