@@ -161,12 +161,18 @@
           </div>
         </div>
 
-        <!-- click a specific wall segment on the canvas to focus it here —
-             lets a wall's thickness be overridden per side, including 0
-             (open, no wall — see js/room.js setRoomWallSide) -->
-        <div class="ps" v-if="selectedWallSideInfo">
-          <div class="pt">{{ t('panel.wallSide') }} — {{ t('wallSide.' + selectedWallSideInfo.side) }}</div>
-          <div class="f"><label>{{ t('panel.wallThickness') }}</label>
+        <!-- Per-side wall thickness. Pick a side here (or click the wall on
+             the canvas — both drive ui.selectedWallSide); a side can be set
+             to 0 = open/no wall. Always shown so a fully-opened room (no
+             wall segments left to click) can still get its walls back. -->
+        <div class="ps">
+          <div class="pt">{{ t('panel.wallSide') }}</div>
+          <div class="fr wall-side-tabs">
+            <button v-for="s in ['top','right','bottom','left']" :key="s" class="pa sc" :class="{pr: activeWallSide === s}" @click="selectWallSide(s)">
+              {{ t('wallSide.' + s) }}<span v-if="wallSideThicknessOf(s) === 0"> ·{{ t('panel.wallOpenTag') }}</span>
+            </button>
+          </div>
+          <div class="f"><label>{{ t('wallSide.' + activeWallSide) }} — {{ t('panel.wallThickness') }}</label>
             <input type="number" min="0" :value="selectedWallSideInfo.thickness" @change="setWallSideThickness($event.target.valueAsNumber)">
           </div>
           <div class="fr">
@@ -597,15 +603,32 @@ const app = Vue.createApp({
     const selectedRoom = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedRooms.value.length === 1 ? selectedRooms.value[0] : null
     );
-    const selectedWallSideInfo = Vue.computed(() => {
+    // Which wall side the panel's editor is acting on. Follows a wall the
+    // user clicked on the canvas (ui.selectedWallSide) when it belongs to
+    // the selected room; otherwise defaults to 'top' so the section is
+    // always usable — including for a fully-opened room that has no wall
+    // segments left to click.
+    const activeWallSide = Vue.computed(() => {
       const sel = appState.ui.selectedWallSide;
-      if (!sel || !selectedRoom.value || sel.roomId !== selectedRoom.value.id) return null;
-      const override = selectedRoom.value.wallSides ? selectedRoom.value.wallSides[sel.side] : null;
-      return { side: sel.side, thickness: window.roomSideThickness(selectedRoom.value, sel.side), override: override != null };
+      if (sel && selectedRoom.value && sel.roomId === selectedRoom.value.id) return sel.side;
+      return 'top';
     });
+    function wallSideThicknessOf(side) {
+      return selectedRoom.value ? window.roomSideThickness(selectedRoom.value, side) : 0;
+    }
+    const selectedWallSideInfo = Vue.computed(() => {
+      if (!selectedRoom.value) return { side: 'top', thickness: 0, override: false };
+      const side = activeWallSide.value;
+      const override = selectedRoom.value.wallSides ? selectedRoom.value.wallSides[side] : null;
+      return { side, thickness: window.roomSideThickness(selectedRoom.value, side), override: override != null };
+    });
+    function selectWallSide(side) {
+      if (!selectedRoom.value) return;
+      appState.ui.selectedWallSide = { roomId: selectedRoom.value.id, side };
+    }
     function setWallSideThickness(val) {
-      if (!selectedWallSideInfo.value) return;
-      window.setRoomWallSide(selectedRoom.value.id, selectedWallSideInfo.value.side, val);
+      if (!selectedRoom.value) return;
+      window.setRoomWallSide(selectedRoom.value.id, activeWallSide.value, val);
     }
     const selectedFurnitureItem = Vue.computed(() =>
       totalSelectedCount.value === 1 && selectedFurniture.value.length === 1 ? selectedFurniture.value[0] : null
@@ -956,6 +979,9 @@ const app = Vue.createApp({
       regenerateAiExport,
       selectedRoom,
       selectedWallSideInfo,
+      activeWallSide,
+      wallSideThicknessOf,
+      selectWallSide,
       setWallSideThickness,
       selectedRooms,
       selectedFurnitureItem,
