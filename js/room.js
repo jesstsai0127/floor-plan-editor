@@ -57,13 +57,24 @@
   // same stroke width on it, makes the whole band land in [true edge, true
   // edge + thickness] — purely outward, so two rooms placed thickness-apart
   // combine into one correctly sized wall instead of each other's fill.
-  // Each side is a plain segment along the room's own true edge, offset
-  // outward by half its own thickness — independent of its neighbors, so
-  // corners don't perfectly miter when adjacent sides have different
-  // thicknesses (a minor, acceptable v1 simplification; real elevations
-  // often show a visible corner seam too).
+  // Each side is a segment along the room's own true edge, offset outward
+  // by half its own thickness, and extended at BOTH ends by the adjacent
+  // sides' own thickness (e.g. the left wall's length also reaches into
+  // the top and bottom walls' outward bands). Without this, a side is only
+  // as long as the room's own w/h — fine when two rooms sit exactly flush,
+  // but two rooms placed a gap apart (the normal case now, see
+  // stops()/neighborEdgesCm() below) would each stop their perpendicular
+  // walls short of the gap, leaving a visible unfilled notch at the corner
+  // instead of the gap reading as one solid wall. Extending by the room's
+  // OWN adjacent-side thickness (not the neighbor's) is enough: gap =
+  // max(mine, theirs), so whichever side actually owns that max reaches
+  // all the way across on its own.
   function makeWallSideNodes(room) {
     const wPx = cmToPx(room.w), hPx = cmToPx(room.h);
+    const tTop = cmToPx(sideThickness(room, 'top'));
+    const tRight = cmToPx(sideThickness(room, 'right'));
+    const tBottom = cmToPx(sideThickness(room, 'bottom'));
+    const tLeft = cmToPx(sideThickness(room, 'left'));
     const nodes = [];
     WALL_SIDES.forEach((side) => {
       const cm = sideThickness(room, side);
@@ -71,10 +82,10 @@
       const t = Math.max(1, cmToPx(cm));
       const half = t / 2;
       let attrs;
-      if (side === 'top') attrs = { x: 0, y: -half, points: [0, 0, wPx, 0] };
-      else if (side === 'bottom') attrs = { x: 0, y: hPx + half, points: [0, 0, wPx, 0] };
-      else if (side === 'left') attrs = { x: -half, y: 0, points: [0, 0, 0, hPx] };
-      else attrs = { x: wPx + half, y: 0, points: [0, 0, 0, hPx] };
+      if (side === 'top') attrs = { x: -tLeft, y: -half, points: [0, 0, wPx + tLeft + tRight, 0] };
+      else if (side === 'bottom') attrs = { x: -tLeft, y: hPx + half, points: [0, 0, wPx + tLeft + tRight, 0] };
+      else if (side === 'left') attrs = { x: -half, y: -tTop, points: [0, 0, 0, hPx + tTop + tBottom] };
+      else attrs = { x: wPx + half, y: -tTop, points: [0, 0, 0, hPx + tTop + tBottom] };
       nodes.push(new Konva.Line({
         ...attrs,
         stroke: '#2C2416',
