@@ -46,6 +46,22 @@
   window.stage.add(guideLayer);
   window.guideLayer = guideLayer;
 
+  // Everything on guideLayer (drag-snap guides, rubber-band box, hover
+  // tooltip) only makes sense in floor-plan mode — canvas.js hides the
+  // other floor-plan layers on mode switch but doesn't know about this one
+  // (it's created here, after canvas.js runs). Left alone, a tooltip still
+  // showing at the moment of switching to Elevation stayed visible there,
+  // scaled to whatever zoom Elevation happened to be at (which can be very
+  // different from the floor plan's own zoom) — reads as a giant stray
+  // label floating over the drawing.
+  Vue.watch(
+    () => window.appState.ui.mode,
+    (mode) => {
+      guideLayer.visible(mode === 'floorplan');
+      if (mode !== 'floorplan') { window.hideTooltip(); window.clearGuides(); }
+    }
+  );
+
   const tooltip = new Konva.Label({ visible: false, listening: false });
   tooltip.add(new Konva.Tag({ fill: '#2C2416', cornerRadius: 3, opacity: 0.92 }));
   const tooltipText = new Konva.Text({
