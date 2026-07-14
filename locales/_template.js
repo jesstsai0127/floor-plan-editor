@@ -73,7 +73,7 @@ window.LOCALES['REPLACE-WITH-BCP47-CODE'] = {
   'panel.nudgeHint': 'TRANSLATE_ME: Arrow keys: nudge 1 cm',
   'panel.rotation': 'TRANSLATE_ME: Rotation',
   'panel.emptyHint': 'TRANSLATE_ME: Pick the Room tool, then drag on the canvas to draw a room. Edges snap to other rooms and the grid. Shift-click or drag a box to select several; hold Space to pan.',
-  'panel.roomsSelected': 'TRANSLATE_ME: rooms selected',
+  'panel.itemsSelected': 'TRANSLATE_ME: items selected',
   'panel.align': 'TRANSLATE_ME: Align',
   'panel.alignLeft': 'TRANSLATE_ME: Left',
   'panel.alignRight': 'TRANSLATE_ME: Right',
