@@ -58,6 +58,7 @@ window.LOCALES['en-US'] = {
   'panel.wallSide': 'Wall',
   'panel.makeWallOpen': 'Open this wall (no wall)',
   'panel.resetWallSide': 'Reset to room default',
+  'panel.wallOpenTag': 'open',
   'wallSide.top': 'Top',
   'wallSide.right': 'Right',
   'wallSide.bottom': 'Bottom',
